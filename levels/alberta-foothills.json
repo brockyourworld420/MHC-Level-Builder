@@ -1,0 +1,166 @@
+{
+  "schema": "mhc-level-v1",
+  "id": "alberta-foothills-example",
+  "name": "Alberta Foothills Example",
+  "length": 1000,
+  "profile": [
+    [
+      0,
+      0
+    ],
+    [
+      45,
+      0
+    ],
+    [
+      100,
+      5
+    ],
+    [
+      160,
+      12
+    ],
+    [
+      205,
+      12
+    ],
+    [
+      255,
+      6
+    ],
+    [
+      320,
+      2
+    ],
+    [
+      375,
+      4
+    ],
+    [
+      430,
+      20
+    ],
+    [
+      480,
+      22
+    ],
+    [
+      520,
+      14
+    ],
+    [
+      590,
+      10
+    ],
+    [
+      650,
+      18
+    ],
+    [
+      710,
+      17
+    ],
+    [
+      765,
+      6
+    ],
+    [
+      830,
+      3
+    ],
+    [
+      900,
+      6
+    ],
+    [
+      950,
+      3
+    ],
+    [
+      1000,
+      3
+    ]
+  ],
+  "terrain": {
+    "defaultUnderground": "hard-dirt",
+    "underlay": [],
+    "spans": [
+      {
+        "x": 0,
+        "physics": "packed",
+        "visual": "packed",
+        "underground": "inherit"
+      },
+      {
+        "x": 240,
+        "physics": "gravel",
+        "visual": "gravel",
+        "underground": "inherit"
+      },
+      {
+        "x": 340,
+        "physics": "grass",
+        "visual": "grass",
+        "underground": "inherit"
+      },
+      {
+        "x": 570,
+        "physics": "mud",
+        "visual": "mud",
+        "underground": "inherit"
+      },
+      {
+        "x": 645,
+        "physics": "rock",
+        "visual": "rock",
+        "underground": "inherit"
+      },
+      {
+        "x": 815,
+        "physics": "packed",
+        "visual": "packed",
+        "underground": "inherit"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "x": 0,
+      "name": "Trailhead",
+      "landmark": "Start"
+    },
+    {
+      "x": 320,
+      "name": "Valley",
+      "landmark": "Lowlands"
+    },
+    {
+      "x": 645,
+      "name": "Ridge",
+      "landmark": "Rock Climb"
+    }
+  ],
+  "signs": [
+    [
+      0,
+      "START",
+      "trail"
+    ],
+    [
+      320,
+      "VALLEY",
+      "checkpoint"
+    ],
+    [
+      645,
+      "RIDGE",
+      "hill"
+    ],
+    [
+      1000,
+      "FINISH",
+      "finish"
+    ]
+  ],
+  "deck": []
+}
