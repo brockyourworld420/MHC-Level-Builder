@@ -8,7 +8,7 @@ When this repository's GitHub Pages deployment is enabled, open its Pages URL an
 
 ## Publish with free GitHub Pages
 
-Create a **separate PUBLIC repository**, such as `MHC-Level-Builder`, then upload the files in this folder to the root of that new repository. Under **Settings → Pages → Build and deployment**, choose **Deploy from a branch**, **main**, **/(root)** and **Save**. Once GitHub shows `Your site is live`, bookmark the Pages URL. Public repositories can use Pages on GitHub Free.
+The editor is already uploaded to the public repository [MHC-Level-Builder](https://github.com/brockyourworld420/MHC-Level-Builder). To turn on the direct browser link, open **[Settings → Pages](https://github.com/brockyourworld420/MHC-Level-Builder/settings/pages)**, find **Build and deployment → Source**, and select **GitHub Actions**. The existing `.github/workflows/pages.yml` then publishes only the editor and its example level. Re-run that deployment from Actions if the initial run failed before Pages was enabled. When GitHub confirms deployment, open `https://brockyourworld420.github.io/MHC-Level-Builder/`. Public repositories can use GitHub Pages on GitHub Free.
 
 A browser link is available only after that repository has been created and Pages has finished its first deployment. Do not change the visibility of the main MHC game repository.
 
