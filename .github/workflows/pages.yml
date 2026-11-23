@@ -1,0 +1,57 @@
+name: Deploy public MHC Level Builder
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: mhc-editor-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify standalone editor JS syntax
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          page=Path('index.html').read_text(encoding='utf8')
+          assert '<script>' in page and '</script>' in page
+          code=page.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/mhc-public-editor-script.js').write_text(code)
+          PY
+          node --check /tmp/mhc-public-editor-script.js
+      - name: Assemble editor-only public site
+        shell: bash
+        run: |
+          mkdir -p _site/levels
+          cp index.html _site/index.html
+          touch _site/.nojekyll
+          cp levels/alberta-foothills.json _site/levels/alberta-foothills.json
+          python3 - <<'PY'
+          from pathlib import Path
+          entries=sorted(str(x.relative_to('_site')) for x in Path('_site').rglob('*') if x.is_file())
+          assert entries==['.nojekyll','index.html','levels/alberta-foothills.json'],entries
+          print('Public safe website files:',entries)
+          PY
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
