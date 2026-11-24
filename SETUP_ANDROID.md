@@ -1,21 +1,25 @@
-# MHC Level Builder — Android setup
+# Android setup — public MHC tools
 
-The **public** Level Builder repository is already created and the editor is already uploaded: https://github.com/brockyourworld420/MHC-Level-Builder . The original Motorcycle Hill Climb Racing game repository remains **private**.
+This **public** repository hosts the Level Builder and Forge Studio. The separate full MHC game repository remains **private**.
 
-## One-time action: enable GitHub Pages
+## Open on your phone
 
-1. On your Android phone open https://github.com/brockyourworld420/MHC-Level-Builder/settings/pages
-2. Under **Build and deployment → Source**, select **GitHub Actions**. This is different from the original private MHC repository settings.
-3. If the Pages menu is collapsed on mobile, tap the page heading and scroll down; Chrome's **Desktop site** can help.
-4. GitHub's first editor deployment ran before Pages was enabled, so it may show a failed workflow. After enabling Pages, open https://github.com/brockyourworld420/MHC-Level-Builder/actions/workflows/pages.yml and tap **Run workflow** (or ask ChatGPT to rerun it through GitHub).
-5. When the workflow succeeds, the editor link should be https://brockyourworld420.github.io/MHC-Level-Builder/ . Check **Settings → Pages** for GitHub's actual live URL before bookmarking.
+1. Level Builder: https://brockyourworld420.github.io/MHC-Level-Builder/
+2. Forge Asset Studio: https://brockyourworld420.github.io/MHC-Level-Builder/asset-studio/
+3. Rotate your Android browser to landscape for the level editor. Bookmark both pages.
 
-## Working in the editor
+Both HTML pages are standalone and do not require installation or access to the private game for their offline functions.
 
-Rotate the phone to landscape. Drag terrain points, paint surface materials, add signs and checkpoints, import or export JSON, and save copies periodically. Drafts are saved locally in that browser only.
+## First-use notes
 
-The standalone editor has illustrative scenery, not the private MHC game renderer. Never put your API key into this public repository. For AI-generated terrain, use the separate GitHub Actions workflow in the private MHC repo and import its JSON output.
+**Level Builder:** Edit terrain with tap/drag, add points, paint independent surface/physics/underground, use JSON import/export and save backups. The scenic view is illustrative, not a playable private game render.
 
-## Updating this editor
+**Forge:** Select an asset preset and edit prompt/style/size/quality. Free offline editing and ZIP review work without a GitHub token or OpenAI key. To generate artwork, use the private [Asset Workshop GitHub Actions](https://github.com/brockyourworld420/Motorcycle-hill-climb-racing/actions/workflows/asset-workshop.yml), or optionally connect Forge with a short-lived fine-grained GitHub token that can access only that private repository (Actions read/write, Contents read/write only if uploading references).
 
-The GitHub Actions workflow `.github/workflows/pages.yml` publishes the allow-listed `index.html` and example level files automatically on later changes to `main`. It does not publish the private game source, assets or secrets.
+Forge does not store a token across sessions and does not include an OpenAI key. Image jobs use the private repo's encrypted Actions secret and require paid opt-in; their dollar allowance is for planning, not an enforced billing cap.
+
+## Publishing
+
+The public Pages workflow already exists and runs when `main` changes. If website publishing reports GitHub Pages is not configured, visit [Settings → Pages](https://github.com/brockyourworld420/MHC-Level-Builder/settings/pages), choose **Source: GitHub Actions**, and rerun [the Pages deployment](https://github.com/brockyourworld420/MHC-Level-Builder/actions/workflows/pages.yml). This is **the public tools repository's settings**, not the private game repository.
+
+Do not change the private game's visibility to Public. The publishing workflow copies only two standalone HTML pages and one non-sensitive sample level JSON; all other repository files are excluded.
