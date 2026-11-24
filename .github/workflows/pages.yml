@@ -22,28 +22,37 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify standalone editor JS syntax
+      - name: Verify both standalone editor and Forge Studio JS syntax
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          page=Path('index.html').read_text(encoding='utf8')
-          assert '<script>' in page and '</script>' in page
-          code=page.split('<script>',1)[1].split('</script>',1)[0]
-          Path('/tmp/mhc-public-editor-script.js').write_text(code)
+          for path, out in (
+              ('index.html', '/tmp/mhc-public-editor-script.js'),
+              ('asset-studio/index.html', '/tmp/mhc-public-forge-script.js')
+          ):
+              page=Path(path).read_text(encoding='utf8')
+              assert page.count('<script>') == 1 and '</script>' in page, path
+              code=page.split('<script>',1)[1].split('</script>',1)[0]
+              Path(out).write_text(code, encoding='utf-8')
+          studio=Path('asset-studio/index.html').read_text(encoding='utf8')
+          assert 'MHC_OPENAI_API_KEY' not in studio
+          assert 'request_json' in studio and 'github_pat_' in studio
           PY
           node --check /tmp/mhc-public-editor-script.js
+          node --check /tmp/mhc-public-forge-script.js
       - name: Assemble editor-only public site
         shell: bash
         run: |
-          mkdir -p _site/levels
+          mkdir -p _site/levels _site/asset-studio
           cp index.html _site/index.html
+          cp asset-studio/index.html _site/asset-studio/index.html
           touch _site/.nojekyll
           cp levels/alberta-foothills.json _site/levels/alberta-foothills.json
           python3 - <<'PY'
           from pathlib import Path
           entries=sorted(str(x.relative_to('_site')) for x in Path('_site').rglob('*') if x.is_file())
-          assert entries==['.nojekyll','index.html','levels/alberta-foothills.json'],entries
+          assert entries==['.nojekyll','asset-studio/index.html','index.html','levels/alberta-foothills.json'],entries
           print('Public safe website files:',entries)
           PY
       - uses: actions/configure-pages@v5
