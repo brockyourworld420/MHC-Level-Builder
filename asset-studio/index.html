@@ -94,12 +94,29 @@ function readStore(k,fallback){try{return JSON.parse(localStorage.getItem(k))??f
 function tab(name){for(const b of document.querySelectorAll('[data-tab]')){b.classList.toggle('active',b.dataset.tab===name);b.setAttribute('aria-selected',b.dataset.tab===name?'true':'false')}for(const section of ['create','review','jobs','connect'])$('tab-'+section).hidden=section!==name;if(name==='jobs')renderJobs();window.scrollTo(0,0)}
 for(const b of document.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>tab(b.dataset.tab));
 function getDraft(){return{project:$('project').value,assetName:$('asset-name').value,prompt:$('prompt').value,style:$('style').value,model:$('model').value,quality:$('quality').value,complexity:$('complexity').value,variations:$('variations').value,apiSize:$('api-size').value,background:$('background').value,width:$('width').value,height:$('height').value,budget:$('budget').value,preset:selectedPreset}}
-function persist(){writeStore(STATE_KEY,getDraft());recalc()}
+let initializingWorkspace=true,activeProject='';
+function persist(){const draft=getDraft();if(!initializingWorkspace){writeStore(STATE_KEY,draft);writeStore(STATE_KEY+'.'+draft.project,draft);}recalc()}
+function applyDraft(snapshot){
+ if(!snapshot||typeof snapshot!=='object')return;
+ const fields={project:'project',assetName:'asset-name',prompt:'prompt',style:'style',model:'model',quality:'quality',complexity:'complexity',variations:'variations',apiSize:'api-size',background:'background',width:'width',height:'height',budget:'budget'};
+ for(const [key,id] of Object.entries(fields)){if(typeof snapshot[key]==='string'&&$(id))$(id).value=snapshot[key]}
+ if(PRESETS[snapshot.preset])selectedPreset=snapshot.preset;
+ for(const b of $('presets').querySelectorAll('button'))b.classList.toggle('selected',b.dataset.preset===selectedPreset);
+ $('active-template').textContent=selectedPreset.replace('-',' ').toUpperCase();
+}
 function presetChange(key){const p=PRESETS[key];selectedPreset=key;$('asset-name').value=p.name;$('prompt').value=p.prompt;$('api-size').value=p.api;$('width').value=p.size[0];$('height').value=p.size[1];$('background').value=p.background;for(const b of $('presets').querySelectorAll('button'))b.classList.toggle('selected',b.dataset.preset===key);$('active-template').textContent=key.replace('-',' ').toUpperCase();$('repo-ref-note').textContent=p.ref?'Default MHC art reference: '+p.ref:'No automatic repository reference for this template.';persist()}
 function initPresets(){for(const [k,p] of Object.entries(PRESETS)){const b=document.createElement('button');b.type='button';b.dataset.preset=k;b.innerHTML=`<span class="symbol" aria-hidden="true">${p.icon}</span><span>${escapeHtml(p.name)}</span>`;b.addEventListener('click',()=>presetChange(k));$('presets').append(b)}}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function recalc(){const n=Number($('variations').value),reserve=RESERVE[$('quality').value]*n,budget=Number($('budget').value);$('estimated-count').textContent=String(n);$('estimated-cost').textContent='$'+reserve.toFixed(2);$('budget-warning').textContent=budget<reserve?`Paid run needs at least $${reserve.toFixed(2)} planning allowance; current selection: $${budget}.`:`$${budget} allowance covers the $${reserve.toFixed(2)} planning reserve, not actual billing.`;$('budget-warning').className=budget<reserve?'hint warning':'hint';$('launch-mode').textContent=connected?'CONNECTED':'MANUAL';$('launch-help').textContent=connected?'Connected: free validate or confirm paid generation here. API charges are not guaranteed to stop at the allowance.':'Offline: export/copy JSON and paste it into GitHub Actions request_json. For no-copy launches use Connect.'}
-for(const id of ['project','asset-name','prompt','style','model','quality','complexity','variations','api-size','background','width','height','budget'])$(id).addEventListener('input',()=>{if(id==='project'){if($('project').value!=='motorcycle-hill-climb-racing'){if($('style').value===STYLE_MHC)$('style').value=OTHER_STYLE;if(selectedPreset!=='custom')presetChange('custom')}else if($('style').value===OTHER_STYLE)$('style').value=STYLE_MHC;renderRefs()}persist()});
+for(const id of ['project','asset-name','prompt','style','model','quality','complexity','variations','api-size','background','width','height','budget'])$(id).addEventListener('input',()=>{
+ if(id==='project'){
+  const project=$('project').value, saved=readStore(STATE_KEY+'.'+project,null);
+  if(saved){applyDraft(saved);$('project').value=project}
+  else{if(project!=='motorcycle-hill-climb-racing'){if($('style').value===STYLE_MHC)$('style').value=OTHER_STYLE;if(selectedPreset!=='custom')presetChange('custom')}else if($('style').value===OTHER_STYLE)$('style').value=STYLE_MHC}
+  activeProject=project;renderRefs();
+ }
+ persist();
+});
 function slug(s){return String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,48)||'asset'}
 function requestId(){const d=new Date(),s=d.toISOString().replace(/[-:TZ.]/g,'').slice(0,12);return `forge-${s}-${Math.random().toString(36).slice(2,6)}`}
 function makeManifest(id=requestId(),includeUploaded=true){const count=Number($('variations').value),name=$('asset-name').value.trim(),prompt=$('prompt').value.trim(),style=$('style').value.trim(),w=Number($('width').value),h=Number($('height').value);if(name.length<1||name.length>130)throw Error('Asset name must be 1–130 characters.');if(prompt.length<25||prompt.length>15000)throw Error('Prompt must be 25–15,000 characters.');if(style.length<15||style.length>11000)throw Error('Style guide must be 15–11,000 characters.');if(!Number.isInteger(w)||!Number.isInteger(h)||w<32||w>2048||h<32||h>2048)throw Error('Export dimensions must be 32–2,048 whole pixels.');if(count<1||count>3)throw Error('Variations must be 1–3.');let references=[];const preset=PRESETS[selectedPreset];if(preset.ref&&$('project').value==='motorcycle-hill-climb-racing'&&refs.length<2)references.push(preset.ref);if(includeUploaded){references.push(...refs.map((r,i)=>`asset-requests/${id}/reference-${i+1}.jpg`))}if(references.length>2)throw Error('Maximum 2 total references. Remove a photo or choose Custom asset without a built-in reference.');return{schema:2,request_id:id,project:$('project').value,style_text:style,review_only:true,assets:Array.from({length:count},(_,i)=>({id:slug(name).slice(0,48)+'-'+String(i+1).padStart(2,'0'),name:`${name} — variation ${i+1}`,prompt:prompt+(count>1?` Create visually distinct but style-matched variation ${i+1} of ${count}.`:''),references,size:[w,h],api_size:$('api-size').value,background:$('background').value,model:$('model').value,quality:$('quality').value,complexity:$('complexity').value}))}}
@@ -144,237 +161,13 @@ function makeZip(files){const parts=[],cd=[],head=[],date=new Date();let offset=
 function reviewNotes(){return JSON.stringify({schema:1,request_id:reviewKey,exported:new Date().toISOString(),decisions:review.map(x=>({id:x.id,name:x.name,file:x.file,decision:x.decision,notes:x.notes}))},null,2)+'\n'}
 $('export-notes').addEventListener('click',()=>{if(!review.length)return;download(`forge-${reviewKey}-review.json`,new Blob([reviewNotes()],{type:'application/json'}));toast('Review notes exported.')});$('export-approved').addEventListener('click',async()=>{const approved=review.filter(x=>x.decision==='approved'&&x.blob);if(!approved.length){toast('Approve at least one generated PNG first.',true);return}const files=[['review-decisions.json',enc.encode(reviewNotes())]];for(const x of approved)files.push([`approved/${slug(x.id)}.png`,new Uint8Array(await x.blob.arrayBuffer())]);download(`forge-${reviewKey}-approved.zip`,makeZip(files));toast(`${approved.length} approved assets exported. Original game remains unchanged.`)});
 $('compare-btn').addEventListener('click',()=>{const two=review.filter(x=>x.compare);if(two.length!==2)return;const body=$('compare-body');body.replaceChildren();for(const x of two){const div=document.createElement('div'),title=document.createElement('h3'),img=document.createElement('img');title.textContent=x.name;img.src=x.url;img.alt=x.name;div.append(title,img);body.append(div)}$('compare-dialog').showModal()});
-function init(){initPresets();presetChange('boulder');const s=readStore(STATE_KEY,null);if(s){for(const [key,id] of Object.entries({project:'project',assetName:'asset-name',prompt:'prompt',style:'style',model:'model',quality:'quality',complexity:'complexity',variations:'variations',apiSize:'api-size',background:'background',width:'width',height:'height',budget:'budget'})){if(typeof s[key]==='string'&&$(id))$(id).value=s[key]}if(PRESETS[s.preset])selectedPreset=s.preset;for(const b of $('presets').querySelectorAll('button'))b.classList.toggle('selected',b.dataset.preset===selectedPreset);$('active-template').textContent=selectedPreset.toUpperCase()}else{$('style').value=STYLE_MHC;$('prompt').value=PRESETS.boulder.prompt}recalc();renderRefs();renderReview();renderJobs()}
-
-// Forge v4: review from private GitHub draft branch, with NO ZIP downloads.
-// Authentication is always through the existing short-lived in-memory GitHub token.
-// Private drafts are never published to GitHub Pages.
-let loadedReport = null;
-let lastPublishedRequest = '';
-
-
-function reconstructLegacyCost(report) {
-  // Previously generated ZIPs already included usage tokens, but no dollar total.
-  // Apply current published STANDARD GPT-Image-2.6 rates to those saved counts.
-  const rows = (report.assets || []).filter(x => x.file && x.reported_usage);
-  if (!rows.length) return null;
-  let total = 0;
-  for (const row of rows) {
-    const model = row.model || report.model;
-    if (model !== 'gpt-image-2.6-flare' && model !== 'gpt-image-2.6-sunburst') return null;
-    const u = row.reported_usage;
-    const d = u && u.input_tokens_details;
-    const od = u && u.output_tokens_details;
-    if (!d || !Number.isInteger(d.text_tokens) || !Number.isInteger(d.image_tokens) ||
-        !Number.isInteger(u.input_tokens) || !Number.isInteger(u.output_tokens) ||
-        d.text_tokens + d.image_tokens !== u.input_tokens) return null;
-    let output = u.output_tokens;
-    if (od && typeof od === 'object') {
-      if (!Number.isInteger(od.image_tokens) || (od.text_tokens || 0) !== 0) return null;
-      output = od.image_tokens;
-    }
-    if (Math.min(d.text_tokens, d.image_tokens, output) < 0) return null;
-    total += (d.text_tokens * 5 + d.image_tokens * 8 + output * 30) / 1000000;
-  }
-  return total;
+function init(){
+ const saved=readStore(STATE_KEY,null);
+ initPresets();presetChange('boulder');
+ if(saved){applyDraft(saved)}else{$('style').value=STYLE_MHC;$('prompt').value=PRESETS.boulder.prompt}
+ activeProject=$('project').value;initializingWorkspace=false;
+ persist();renderRefs();renderReview();renderJobs();
 }
-
-function formatApiCost(report) {
-  if (!report || report.mode !== 'paid') return 'No paid generation';
-  const amount = report.estimated_api_cost_usd;
-  const legacy = typeof amount === 'number' ? null : reconstructLegacyCost(report);
-  if (legacy !== null) {
-    return 'Estimated API cost $' + legacy.toFixed(4) +
-      ' USD (reconstructed from older token report at 2026-11-23 rates)';
-  }
-  const priced = Number(report.priced_images || 0);
-  const generated = Number(report.generated_images || 0);
-  if (typeof amount === 'number' && Number.isFinite(amount)) {
-    return 'Estimated API cost $' + amount.toFixed(4) + ' USD (from token usage)';
-  }
-  const subtotal = report.priced_partial_cost_usd;
-  if (typeof subtotal === 'number' && Number.isFinite(subtotal)) {
-    return 'Cost total unavailable; known subtotal $' + subtotal.toFixed(4) +
-      ' USD (' + priced + '/' + generated + ' priced)';
-  }
-  return 'API cost unavailable for this run (token usage not reported)';
-}
-
-function showReportCost(report) {
-  const target = $('api-cost-report');
-  if (!target) return;
-  const text = formatApiCost(report);
-  target.textContent = text + '. The allowance is a planning gate, NOT an invoice or hard cap.';
-}
-
-function secureAssetId(id) {
-  if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(String(id))) {
-    throw Error('Invalid asset or review identifier');
-  }
-  return String(id);
-}
-
-async function githubBlobBytes(sha) {
-  if (!/^[0-9a-f]{40}$/.test(String(sha))) throw Error('Invalid GitHub blob identifier');
-  const object = await gh('/git/blobs/' + sha);
-  if (object.encoding !== 'base64' || typeof object.content !== 'string') {
-    throw Error('GitHub returned an unsupported or too-large asset blob');
-  }
-  const bin = atob(object.content.replace(/\s/g, ''));
-  if (bin.length > 20_000_000) throw Error('Draft image is too large for phone review');
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
-}
-
-async function loadCloudReview(id) {
-  try {
-    if (!connected) {
-      tab('connect');
-      throw Error('Connect your GitHub token first (Contents: read is required)');
-    }
-    id = secureAssetId(id);
-    $('review-status').textContent = 'Loading private GitHub drafts…';
-    const ref = await gh('/git/ref/heads/forge-drafts/' + id);
-    const commit = await gh('/git/commits/' + ref.object.sha);
-    const all = await gh('/git/trees/' + commit.tree.sha + '?recursive=1');
-    const prefix = 'asset-workshop/draft-reviews/' + id + '/';
-    const lookup = name => {
-      const entry = (all.tree || []).find(x => x.path === prefix + name && x.type === 'blob');
-      if (!entry) throw Error('Draft file missing: ' + name);
-      return entry.sha;
-    };
-    const reportBytes = await githubBlobBytes(lookup('report.json'));
-    const report = JSON.parse(dec.decode(reportBytes));
-    if (report.request_id !== id || report.mode !== 'paid' || !Array.isArray(report.assets)) {
-      throw Error('Draft report is not a matching paid Forge request');
-    }
-    if (report.assets.length < 1 || report.assets.length > 3) {
-      throw Error('Draft report has an invalid image count');
-    }
-    const entries = [['asset-workshop-output/report.json', reportBytes]];
-    for (const item of report.assets) {
-      if (typeof item.file !== 'string' || !/^[a-z0-9][a-z0-9-]{1,62}\.png$/.test(item.file)) {
-        throw Error('Draft report references an invalid image filename');
-      }
-      entries.push(['asset-workshop-output/' + item.file,
-        await githubBlobBytes(lookup(item.file))]);
-    }
-    await loadReview(new File([makeZip(entries)], id + '.zip', {type: 'application/zip'}));
-    tab('review');
-    toast('Private drafts loaded. Review and send approved assets straight to GitHub.');
-  } catch (error) {
-    $('review-status').textContent = error.message;
-    toast('Could not open private draft: ' + error.message + '. Older jobs can still import ZIPs.', true);
-  }
-}
-
-async function publishApprovedToGithub() {
-  const btn = $('send-approved');
-  try {
-    if (!connected) {
-      tab('connect');
-      throw Error('Connect GitHub with Contents: read/write permission first');
-    }
-    const key = secureAssetId(reviewKey);
-    const approved = review.filter(x => x.decision === 'approved' && x.blob);
-    if (!approved.length) throw Error('Approve at least one generated image');
-    if (approved.length > 3) throw Error('Maximum three images per batch');
-    if (lastPublishedRequest === key) throw Error('This review was already sent in this session');
-    const folder = 'assets/forge-approved/' + key + '/';
-    const desc = 'Save ' + approved.length + ' approved PNG(s) to the PRIVATE game repository?\n\n' +
-      folder + '\n\nNo existing game art, physics, levels or playable files will be replaced. ' +
-      'These assets will be available for a separate game integration step.';
-    if (!confirm(desc)) return;
-    btn.disabled = true;
-    btn.textContent = 'Preparing GitHub commit…';
-    $('publish-result').textContent = 'Uploading approved images directly to private GitHub…';
-    const head = await gh('/git/ref/heads/main');
-    const parent = head.object && head.object.sha;
-    if (!/^[0-9a-f]{40}$/.test(String(parent))) throw Error('Invalid repository head');
-    const parentCommit = await gh('/git/commits/' + parent);
-    const baseTree = parentCommit.tree.sha;
-    const existing = await gh('/git/trees/' + baseTree + '?recursive=1');
-    if ((existing.tree || []).some(entry => entry.path.startsWith(folder))) {
-      throw Error('This request already exists in approved assets. Nothing was overwritten.');
-    }
-    const tree = [];
-    const filenames = new Set();
-    for (let index = 0; index < approved.length; index++) {
-      const asset = approved[index];
-      const file = secureAssetId(asset.id) + '.png';
-      if (filenames.has(file)) throw Error('Duplicate approved image name');
-      filenames.add(file);
-      if (asset.blob.size > 20_000_000) throw Error('Image exceeds 20 MB limit');
-      btn.textContent = 'Sending image ' + (index + 1) + ' of ' + approved.length + '…';
-      const object = await gh('/git/blobs', {
-        method: 'POST',
-        body: JSON.stringify({content: await blobB64(asset.blob), encoding: 'base64'})
-      });
-      tree.push({path: folder + file, mode: '100644', type: 'blob', sha: object.sha});
-    }
-    const reviewInfo = {
-      schema: 1,
-      request_id: key,
-      published_at: new Date().toISOString(),
-      source: 'The Forge v4 - approved artwork',
-      approval: review.map(x => ({
-        id: x.id, name: x.name, decision: x.decision, notes: x.notes
-      })),
-      cost: loadedReport ? {
-        model: loadedReport.model,
-        planning_reserve_usd: loadedReport.planning_reserve_usd,
-        estimated_api_cost_usd: loadedReport.estimated_api_cost_usd,
-        priced_images: loadedReport.priced_images,
-        generated_images: loadedReport.generated_images,
-        cost_notice: loadedReport.cost_notice
-      } : {note: 'No usage report was available for this imported artwork'},
-      integration: 'Asset library only. No changes to game code or levels.'
-    };
-    const meta = await gh('/git/blobs', {
-      method: 'POST',
-      body: JSON.stringify({content: JSON.stringify(reviewInfo, null, 2) + '\n',
-        encoding: 'utf-8'})
-    });
-    tree.push({path: folder + 'review.json', mode: '100644', type: 'blob', sha: meta.sha});
-    const createdTree = await gh('/git/trees', {
-      method: 'POST',
-      body: JSON.stringify({base_tree: baseTree, tree})
-    });
-    const committed = await gh('/git/commits', {
-      method: 'POST',
-      body: JSON.stringify({
-        message: 'Forge approved art: ' + key + ' (' + approved.length + ' images)',
-        tree: createdTree.sha, parents: [parent]
-      })
-    });
-    await gh('/git/refs/heads/main', {
-      method: 'PATCH',
-      body: JSON.stringify({sha: committed.sha, force: false})
-    });
-    const verify = await gh('/git/ref/heads/main');
-    if (verify.object.sha !== committed.sha) throw Error('Could not verify published commit');
-    lastPublishedRequest = key;
-    const result = $('publish-result');
-    result.replaceChildren();
-    result.append('✓ ' + approved.length + ' approved PNG(s) saved. ');
-    const link = document.createElement('a');
-    link.href = 'https://github.com/' + REPO + '/commit/' + committed.sha;
-    link.target = '_blank'; link.rel = 'noopener noreferrer';
-    link.textContent = 'View private GitHub commit ↗';
-    result.append(link);
-    toast('Approved artwork saved to GitHub. Game files were not changed.');
-  } catch (error) {
-    $('publish-result').textContent = 'Not published: ' + error.message;
-    toast('GitHub publish failed: ' + error.message, true);
-  } finally {
-    btn.textContent = '↑ Send approved to GitHub';
-    btn.disabled = !connected || !review.some(x => x.decision === 'approved' && x.blob) ||
-      lastPublishedRequest === reviewKey;
-  }
-}
-$('send-approved').addEventListener('click', publishApprovedToGithub);
-
 init();
 })();
 </script>
