@@ -397,7 +397,196 @@ async function publishApprovedToGithub() {
 }
 $('send-approved').addEventListener('click', publishApprovedToGithub);
 
+
+// Forge v5: On-device workspace. No backend, cookies or third-party storage.
+// Browser/OS storage clearing, incognito mode and storage eviction can erase it.
+const FORGE_DB='forge.device-workspace.v5', FORGE_STORE='records';
+const REVIEW_INDEX_KEY='forge.local-review-index';
+
+function forgeDb(){
+ return new Promise((resolve,reject)=>{
+  if(!('indexedDB' in window)){reject(Error('IndexedDB is unavailable in this browser'));return;}
+  const request=indexedDB.open(FORGE_DB,1);
+  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(FORGE_STORE))db.createObjectStore(FORGE_STORE,{keyPath:'key'});};
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error||Error('Browser storage could not open'));
+  request.onblocked=()=>reject(Error('Close other Forge tabs to upgrade local storage'));
+ });
+}
+async function forgeDbAction(action,key,value){
+ const db=await forgeDb();
+ return new Promise((resolve,reject)=>{
+  let settled=false;
+  const done=(error,result)=>{if(settled)return;settled=true;db.close();error?reject(error):resolve(result);};
+  try{
+   const tx=db.transaction(FORGE_STORE,action==='get'?'readonly':'readwrite');
+   const store=tx.objectStore(FORGE_STORE);
+   const req=action==='get'?store.get(key):action==='put'?store.put({key,value}):action==='delete'?store.delete(key):store.clear();
+   req.onerror=()=>done(req.error||Error('Browser storage request failed'));
+   tx.onerror=()=>done(tx.error||Error('Browser storage transaction failed'));
+   tx.onabort=()=>done(tx.error||Error('Browser storage transaction stopped'));
+   tx.oncomplete=()=>done(null,action==='get'?(req.result?req.result.value:null):true);
+  }catch(e){done(e);}
+ });
+}
+const localGet=key=>forgeDbAction('get',key);
+const localPut=(key,value)=>forgeDbAction('put',key,value);
+const localDel=key=>forgeDbAction('delete',key);
+function setLocalStorageWarning(message){
+ if($('local-save-status'))$('local-save-status').textContent=message;
+ if($('browser-save-status'))$('browser-save-status').textContent=message;
+}
+async function saveCachedReferences(){
+ const serialized=refs.slice(0,2).map(r=>({name:r.name,blob:r.blob}));
+ await localPut('references',serialized);
+}
+async function restoreCachedReferences(){
+ const saved=await localGet('references');
+ if(!Array.isArray(saved)||refs.length)return;
+ refs=saved.slice(0,2).filter(x=>x&&x.blob instanceof Blob&&typeof x.name==='string')
+ .map(x=>({name:x.name,blob:x.blob,url:URL.createObjectURL(x.blob)}));
+ renderRefs();
+}
+function savedReviewIndex(){return readStore(REVIEW_INDEX_KEY,[]).filter(x=>x&&/^[a-z0-9-]{2,63}$/.test(x.id)).slice(0,8);}
+function refreshSavedReviewList(){
+ const list=$('saved-reviews-list');list.replaceChildren();
+ const index=savedReviewIndex();
+ $('restore-last-review').disabled=!index.length;
+ for(const entry of index){
+  const row=document.createElement('div');row.className='row';
+  const title=document.createElement('span');title.className='hint grow';
+  title.textContent=(entry.title||entry.id)+' · '+new Date(entry.updated).toLocaleDateString();
+  const button=document.createElement('button');button.className='small';
+  button.textContent='Reopen';button.addEventListener('click',()=>openSavedReview(entry.id));
+  row.append(title,button);list.append(row);
+ }
+}
+async function cacheCurrentReview(){
+ if(!reviewKey||!review.length||!loadedReport)return;
+ const assets=review.map(x=>({id:x.id,name:x.name,file:x.file,status:x.status,blob:x.blob}));
+ await localPut('review:'+reviewKey,{report:loadedReport,assets,updated:Date.now()});
+ writeStore('forge.last-review',reviewKey);
+ const title=review[0].name+(review.length>1?' + '+(review.length-1)+' more':'');
+ const index=[{id:reviewKey,title,updated:Date.now()},...savedReviewIndex().filter(x=>x.id!==reviewKey)];
+ const keep=index.slice(0,8);
+ writeStore(REVIEW_INDEX_KEY,keep);
+ for(const entry of index.slice(8)){await localDel('review:'+entry.id);}
+ refreshSavedReviewList();
+ $('local-save-status').textContent='✓ Review images and decisions saved on this browser.';
+}
+async function openSavedReview(key,quiet=false){
+ if(!/^[a-z0-9-]{2,63}$/.test(String(key)))throw Error('Invalid review ID');
+ const saved=await localGet('review:'+key);
+ if(!saved||!Array.isArray(saved.assets)||!saved.report){
+  throw Error('Saved artwork was removed by this browser; reopen it from GitHub if available');
+ }
+ review.forEach(x=>x.url&&URL.revokeObjectURL(x.url));
+ reviewKey=key;
+ lastPublishedRequest=readStore('forge.last-published','');
+ loadedReport=saved.report;showReportCost(loadedReport);
+ const decisions=readStore(reviewsStoreKey(),[]);
+ review=saved.assets.map((asset,i)=>{
+  const blob=asset.blob instanceof Blob?asset.blob:null;
+  const state=decisions.find(d=>d.id===asset.id)||{};
+  return {id:asset.id||String(i),name:asset.name||'Asset '+(i+1),
+   file:asset.file||'',status:asset.status||'',url:blob?URL.createObjectURL(blob):'',
+   blob,decision:state.decision||'pending',notes:state.notes||'',compare:false};
+ });
+ $('review-status').textContent=review.length+' saved asset(s) · '+key;
+ renderReview();refreshSavedReviewList();
+ if(!quiet){tab('review');toast('Saved artwork restored from this browser.');}
+}
+$('restore-last-review').addEventListener('click',async()=>{
+ const key=readStore('forge.last-review','');
+ if(!key){toast('No previous review saved.',true);return;}
+ try{await openSavedReview(key);}catch(e){toast(e.message,true);}
+});
+
+// Remembered tokens are ALWAYS opt-in. AES key is non-extractable, but it lives
+// in the same browser storage as the encrypted token: this is not XSS protection.
+// On a shared phone, enable neither the saved token nor the auto-reconnect.
+async function saveRememberedToken(){
+ if(!connected||!token)throw Error('Connect to GitHub before saving a connection');
+ if(!window.crypto||!crypto.subtle)throw Error('Browser encryption is not available');
+ const key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const iv=crypto.getRandomValues(new Uint8Array(12));
+ const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:enc.encode(REPO)},key,enc.encode(token));
+ await localPut('github-credential',{key,iv:iv.slice().buffer,encrypted,repo:REPO});
+ $('browser-save-status').textContent='✓ Encrypted connection saved on this device. Disconnect to forget.';
+}
+async function forgetRememberedToken(){
+ await localDel('github-credential');
+ $('remember-connection').checked=false;
+ $('browser-save-status').textContent='Saved GitHub connection forgotten. Other workspace data was kept.';
+}
+async function restoreRememberedToken(){
+ const saved=await localGet('github-credential');
+ if(!saved||saved.repo!==REPO)return;
+ $('remember-connection').checked=true;
+ if(!window.crypto||!crypto.subtle)throw Error('Encryption unavailable: connect again manually');
+ const raw=await crypto.subtle.decrypt({name:'AES-GCM',
+  iv:new Uint8Array(saved.iv),additionalData:enc.encode(REPO)},saved.key,saved.encrypted);
+ token=dec.decode(raw);
+ try{
+  const account=await gh('');
+  if(account.full_name!==REPO)throw Error('Unexpected repository');
+  connected=true;
+  $('connection-pill').textContent='GITHUB CONNECTED';
+  $('connection-status').textContent='✓ Automatically reconnected to '+REPO+' from this browser.';
+  $('browser-save-status').textContent='✓ Encrypted connection restored. Your workspace is available.';
+  $('token').value='';recalc();renderReview();
+  const pending=jobs().filter(j=>j.status==='queued'||j.status==='in_progress').slice(0,3);
+  if(pending.length)Promise.allSettled(pending.map(j=>pollRun(j.id,j.branch||'main')));
+ }catch(error){
+  token='';connected=false;
+  $('connection-status').textContent='Saved connection could not be verified: '+error.message+'. Reconnect when ready.';
+  if(/GitHub 401/.test(error.message)){await forgetRememberedToken();}
+  recalc();renderReview();
+ }
+}
+$('remember-connection').addEventListener('change',async()=>{
+ try{
+  if($('remember-connection').checked){
+   if(connected)await saveRememberedToken();
+   else $('browser-save-status').textContent='The next successful GitHub connection will be remembered.';
+  }else await forgetRememberedToken();
+ }catch(error){
+  $('remember-connection').checked=false;
+  setLocalStorageWarning('Could not remember GitHub connection: '+error.message);
+ }
+});
+$('forget-connection').addEventListener('click',async()=>{
+ try{await forgetRememberedToken();toast('Saved GitHub connection cleared.');}
+ catch(error){toast('Could not forget saved connection: '+error.message,true);}
+});
+$('clear-workspace').addEventListener('click',async()=>{
+ if(!confirm('Erase ALL Forge drafts, cached artwork, reference photos, review notes, job history and remembered GitHub connection from THIS browser? This does not delete GitHub jobs or files.'))return;
+ try{
+  await forgeDbAction('clear');
+  for(const key of Object.keys(localStorage))if(key.startsWith('forge.'))localStorage.removeItem(key);
+  token='';connected=false;
+  location.reload();
+ }catch(error){toast('Could not clear browser workspace: '+error.message,true);}
+});
+async function restoreBrowserWorkspace(){
+ try{
+  await restoreCachedReferences();
+  refreshSavedReviewList();
+  const last=readStore('forge.last-review','');
+  if(last){try{await openSavedReview(last,true)}catch(error){setLocalStorageWarning(error.message);}}
+  const tabName=readStore('forge.last-tab','create');
+  if(['create','review','jobs','connect'].includes(tabName))tab(tabName);
+  await restoreRememberedToken();
+  if(!$('local-save-status').textContent.startsWith('✓')){
+   $('local-save-status').textContent='✓ Drafts, jobs and review choices save on this device. Photos and artwork use local browser storage.';
+  }
+ }catch(error){
+  setLocalStorageWarning('Some browser saves are unavailable: '+error.message+'. Draft text and jobs may still be saved.');
+ }
+}
+
 init();
+restoreBrowserWorkspace();
 })();
 </script>
 </body></html>
