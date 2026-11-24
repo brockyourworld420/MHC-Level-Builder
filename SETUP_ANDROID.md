@@ -14,9 +14,9 @@ Both HTML pages are standalone and do not require installation or access to the 
 
 **Level Builder:** Edit terrain with tap/drag, add points, paint independent surface/physics/underground, use JSON import/export and save backups. The scenic view is illustrative, not a playable private game render.
 
-**Forge:** Select an asset preset and edit prompt/style/size/quality. Free offline editing and ZIP review work without a GitHub token or OpenAI key. To generate artwork, use the private [Asset Workshop GitHub Actions](https://github.com/brockyourworld420/Motorcycle-hill-climb-racing/actions/workflows/asset-workshop.yml), or optionally connect Forge with a short-lived fine-grained GitHub token that can access only that private repository (Actions read/write, Contents read/write only if uploading references).
+**Forge:** Select an asset preset and edit prompt/style/size/quality. Free offline editing and ZIP review work without a GitHub token or OpenAI key. To generate artwork, use the private [Asset Workshop GitHub Actions](https://github.com/brockyourworld420/Motorcycle-hill-climb-racing/actions/workflows/asset-workshop.yml), or optionally connect Forge with a short-lived fine-grained GitHub token that can access only that private repository (Actions read/write, Contents read/write to review and publish images directly).
 
-Forge does not store a token across sessions and does not include an OpenAI key. Image jobs use the private repo's encrypted Actions secret and require paid opt-in; their dollar allowance is for planning, not an enforced billing cap.
+Forge does not store a token across sessions and does not include an OpenAI key. Image jobs use the private repo's encrypted Actions secret and require paid opt-in; their dollar allowance is for planning, not an enforced billing cap. After a completed paid run, open **Jobs → Review here · cost**, approve desired images, and tap **Send approved to GitHub**. This saves selected PNGs to the private game repository under `assets/forge-approved/`, without exporting or uploading ZIPs. This is an asset library, not automatic game integration. The reported cost is a usage-derived USD estimate, not the final API invoice.
 
 ## Publishing
 
