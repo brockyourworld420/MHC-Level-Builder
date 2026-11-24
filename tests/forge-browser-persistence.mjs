@@ -12,7 +12,7 @@ page.on('pageerror', err => errors.push(err.stack || String(err)));
 
 try {
   await page.goto(pageURL, {waitUntil:'load'});
-  assert.match(await page.locator('.footer-note').textContent(), /v5.0/);
+  assert.match(await page.locator('.footer-note').textContent(), /v5\.1/);
 
   // Drafts should not be reset to Boulder defaults on reload.
   await page.locator('#prompt').fill('Save this hill climb terrain boulder prompt across tabs.');
