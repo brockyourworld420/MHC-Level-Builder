@@ -1,37 +1,39 @@
-# MHC Level Builder — public, asset-free editor
+# MHC Public Tools — Level Builder + The Forge Game Asset Studio
 
-A lightweight, standalone HTML level editor for Motorcycle Hill Climb Racing (MHC). This public project contains only the standalone editor and sample level data. **It does not include the private game source, actual game textures, rider artwork, motorcycles, physics engine, OpenAI API key, or builds of the playable game.**
+This **public** repository contains only standalone, browser-friendly tool webpages and one example level JSON. It is deliberately separate from the **private** [Motorcycle Hill Climb Racing game repository](https://github.com/brockyourworld420/Motorcycle-hill-climb-racing), which remains private.
 
-## Open on Android
+## Open the webpages
 
-When this repository's GitHub Pages deployment is enabled, open its Pages URL and rotate to landscape. You can also open `index.html` locally, though some Android file managers restrict opening HTML.
+- **[MHC Level Builder](https://brockyourworld420.github.io/MHC-Level-Builder/)** — shape courses, paint independent surface/physics/underground materials, edit checkpoints and decks, import/export `mhc-level-v1` JSON.
+- **[The Forge — Asset Studio](https://brockyourworld420.github.io/MHC-Level-Builder/asset-studio/)** — design boulders, logs, stumps, grass, mud, timber and UI asset requests; select prompt and model quality; review drafts from ZIPs; export approved PNGs.
 
-## Publish with free GitHub Pages
+Both work in an Android landscape browser. The Forge page also works for editing/reviewing without any authentication.
 
-The editor is already uploaded to the public repository [MHC-Level-Builder](https://github.com/brockyourworld420/MHC-Level-Builder). To turn on the direct browser link, open **[Settings → Pages](https://github.com/brockyourworld420/MHC-Level-Builder/settings/pages)**, find **Build and deployment → Source**, and select **GitHub Actions**. The existing `.github/workflows/pages.yml` then publishes only the editor and its example level. Re-run that deployment from Actions if the initial run failed before Pages was enabled. When GitHub confirms deployment, open `https://brockyourworld420.github.io/MHC-Level-Builder/`. Public repositories can use GitHub Pages on GitHub Free.
+**No game, motorcycle or rider image, sound effects, physics code, full game assets, or OpenAI API key are included in the published webpages.** Only `index.html`, `asset-studio/index.html`, and `levels/alberta-foothills.json` are uploaded to Pages. The allowlist in `.github/workflows/pages.yml` enforces this at deployment.
 
-A browser link is available only after that repository has been created and Pages has finished its first deployment. Do not change the visibility of the main MHC game repository.
+## Forge Studio: using API credits
 
-## Using the editor
+Forge never calls OpenAI directly from the public page. It targets **the private MHC GitHub Actions workflow** `asset-workshop.yml`, where API keys live as encrypted GitHub Actions secrets. Two ways to work:
 
-- **Generate:** Create a course from an offline preset, without API credits.
-- **Move / select:** Tap and drag terrain points; tap to edit details.
-- **Add point / smooth:** Reshape the track. Starting and ending terrain endpoints cannot be moved horizontally.
-- **Paint:** Select separate physics, surface appearance and underground, then tap the terrain at the boundary.
-- **Checkpoint / sign / deck:** Add authored objects and edit their positions and text. Decks require at least two points before export.
-- **Zoom / pan:** Pinch to zoom, two-finger pan or use the +/- buttons.
-- **Save JSON:** Export a file compatible with the `mhc-level-v1` custom-course schema. Import JSON to continue editing. A local browser draft is also saved.
+1. **Without a token:** use Create → choose a preset and edit the prompt → **Copy JSON** or **Download JSON**. In the private game repo, run [Game Asset Workshop](https://github.com/brockyourworld420/Motorcycle-hill-climb-racing/actions/workflows/asset-workshop.yml) with the `request_json` input. Or use its built-in quick asset preset without JSON editing. No credits are spent by simply opening or editing the public page.
+2. **Connected mode (optional):** in Forge → Connect, paste a short-lived **fine-grained GitHub personal access token** restricted to **only** the private MHC repository, with Actions read/write permission. To upload personal photo references, grant Contents read/write too. The browser stores the token **in memory only**, not in the HTML or browser local storage. Disconnect or close the tab to clear it. Forge prompts for explicit confirmation before any paid run.
 
-## Using AI credits safely
+The private workflow limits batches to 1–3 images with no automatic retries and a planning allowance. **The allowance is not a guaranteed API billing cap.** Check account spend limits in OpenAI Platform. Generated outputs are **drafts** in a review ZIP, never automatically replacing approved game assets. Uploaded references are placed on temporary branches of the *private* game repo; delete these branches when finished.
 
-The public editor does **not** call the OpenAI API. Use **Open private AI workflow** to link to the OpenAI-enabled GitHub Actions workflow in the private MHC repo; prompts are copied manually, and the resulting JSON is downloaded and imported here. Never store API keys in GitHub Pages code, JavaScript, or HTML.
+## Level Builder and privacy
 
-## Important limits
+The Level Builder is an **illustrative level editor** and does not include the live proprietary game renderer or game physics. Export levels as JSON and validate/playtest separately in the newest privately held game source. The standard MHC gravity QA uses 0.45g and 0.90g.
 
-The scenic view is **illustrative**, not the actual MHC asset renderer, which remains private. The current verified game source in GitHub may lag the newest project version; do not present browser previews as physics playtests. To test a level, import it into the latest verified MHC private game build separately and test at 0.45g and 0.90g.
+The public tools store working drafts locally in your browser, so download JSON and approved artwork exports as backups. GitHub Pages displays the **public** HTML source for anyone to inspect; do not place private content, secrets, or sensitive images in this repository. No CDN/runtime account service is required merely to open either page. A public visitor cannot launch paid generation in your private game repo without authorized credentials.
 
-## Data and privacy
+## GitHub Pages deployment
 
-The editor stores drafts in the device's `localStorage`, which is not synchronized between devices. Download JSON regularly for backups. Exported JSON may be shared publicly only if you choose to publish it. No tracking scripts, CDNs or third-party runtime dependencies are loaded.
+GitHub Pages is available free for **public** repositories. This project already has its own successful Pages deployment. The [Publish workflow](.github/workflows/pages.yml) rebuilds automatically when `main` changes, and publishes exactly the static site allowlist.
 
-The editor code may be viewed when the repository is public. No software license has been granted automatically; set a license explicitly if you later want third parties to copy or redistribute it.
+If publishing stops working, in this **public repo** open [Settings → Pages](https://github.com/brockyourworld420/MHC-Level-Builder/settings/pages) and choose **Build and deployment → GitHub Actions**; then rerun [Deploy public MHC Level Builder](https://github.com/brockyourworld420/MHC-Level-Builder/actions/workflows/pages.yml).
+
+The private MHC repository is **not** required to be publicly hosted or have GitHub Pages enabled.
+
+## License
+
+This repo's public source is viewable, but no reuse license is granted by default. If external reuse is intended, add a license deliberately.
