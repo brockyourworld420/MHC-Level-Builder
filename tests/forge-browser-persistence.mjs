@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 
 const pageURL = 'http://127.0.0.1:8877/asset-studio/';
-const browser = await chromium.launch({headless:true});
+const browser = await chromium.launch({headless:true, channel:'chrome'});
 const context = await browser.newContext();
 const page = await context.newPage();
 const errors = [];
