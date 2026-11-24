@@ -11,6 +11,11 @@ Both work in an Android landscape browser. The Forge page also works for editing
 
 **No game, motorcycle or rider image, sound effects, physics code, full game assets, or OpenAI API key are included in the published webpages.** Only `index.html`, `asset-studio/index.html`, and `levels/alberta-foothills.json` are uploaded to Pages. The allowlist in `.github/workflows/pages.yml` enforces this at deployment.
 
+
+## Forge v5.1 — publishing confirmation fix
+
+GitHub successfully received some approved assets even when Forge v5.0 showed **“Could not verify published commit.”** The old code did a second, immediate read of `main` after GitHub accepted a non-force branch update; that read can return stale state. Forge v5.1 now accepts GitHub's successful update response as confirmation and records the request as published in browser storage. If a previous upload already exists, it checks the exact approved filenames and review record, reports **“Already saved in GitHub”**, and makes **no new commit**. If the folder contains different files, it refuses to overwrite anything. The original MHC game/runtime stays unchanged.
+
 ## Forge v5 — remember your browser workspace
 
 Forge now automatically saves **draft prompts and settings per game, current project, local job history, review notes, approval choices, last Review tab and downloaded/generated artwork previews**. Up to eight recent review batches plus two compressed personal reference images are stored in browser IndexedDB when permitted. Reopening the same Forge address in the **same browser/profile** restores the last workspace; no ZIP download is needed just to resume reviewing.

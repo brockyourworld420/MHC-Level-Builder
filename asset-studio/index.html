@@ -66,7 +66,7 @@ main{max-width:1520px;margin:0 auto;padding:12px max(12px,env(safe-area-inset-ri
 <p id="local-save-status" class="hint" role="status">Checking saved browser workspace…</p>
 <div class="row" style="margin-top:9px"><button id="restore-last-review" class="small" disabled>↺ Reopen last review</button><span class="hint">Artwork previews, prompts, approvals and job history can be saved on this device.</span></div>
 <div id="saved-reviews-list" class="stack" aria-label="Recently saved reviews"></div></div><div id="review-items" class="asset-grid"></div></section>
-<div class="footer-note">THE FORGE · v5.0 · Browser autosave and direct GitHub review · Art drafts only · No automatic game integration. Allowance = planning check, not a hard spend cap.</div>
+<div class="footer-note">THE FORGE · v5.1 · Reliable GitHub publishing and browser autosave · Art drafts only · No automatic game integration. Allowance = planning check, not a hard spend cap.</div>
 </main>
 <div id="toast" aria-live="polite" role="status"></div>
 <dialog id="image-dialog"><div class="row spread"><strong id="image-title">Asset preview</strong><button class="small" onclick="document.getElementById('image-dialog').close()">Close ×</button></div><img id="image-big" alt="Enlarged artwork"></dialog>
@@ -126,7 +126,7 @@ function exportJSON(){try{if(refs.length)throw Error('Uploaded photos need conne
 async function copyJSON(){try{if(refs.length)throw Error('Uploaded photos need connected mode. Remove them before manual JSON export.');const {json}=validateLocal();if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(json);else{const t=document.createElement('textarea');t.value=json;document.body.append(t);t.select();document.execCommand('copy');t.remove()}toast('JSON copied. Paste into GitHub Actions request_json.')}catch(e){toast(e.message,true)}}
 $('save-json').addEventListener('click',exportJSON);$('copy-json').addEventListener('click',copyJSON);
 async function imageToJPEG(file){if(!/^image\/(png|jpeg|webp)$/.test(file.type))throw Error('Only PNG, JPEG and WebP references are supported.');if(file.size>15_000_000)throw Error('Reference photo is larger than 15 MB.');const bmp=await createImageBitmap(file),scale=Math.min(1,1600/Math.max(bmp.width,bmp.height)),w=Math.round(bmp.width*scale),h=Math.round(bmp.height*scale),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h);ctx.drawImage(bmp,0,0,w,h);bmp.close?.();return new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('Could not process photo.')),'image/jpeg',.83))}
-$('reference-files').addEventListener('change',async e=>{try{for(const f of Array.from(e.target.files)){if(refs.length>=2)throw Error('Maximum two uploaded photos.');const blob=await imageToJPEG(f);refs.push({name:f.name,blob,url:URL.createObjectURL(blob)})}renderRefs();persist();await saveCachedReferences()}catch(err){toast(err.message,true)}e.target.value=''});
+$('reference-files').addEventListener('change',async e=>{try{for(const f of Array.from(e.target.files)){if(refs.length>=2)throw Error('Maximum two uploaded photos.');const blob=await imageToJPEG(f);refs.push({name:f.name,blob,url:URL.createObjectURL(blob)})}renderRefs();persist();await saveCachedReferences();$('local-save-status').textContent='✓ Reference photos saved on this browser.'}catch(err){toast(err.message,true)}e.target.value=''});
 function renderRefs(){$('refs').replaceChildren();for(let i=0;i<refs.length;i++){const r=refs[i],cell=document.createElement('div');cell.className='ref-thumb';cell.innerHTML=`<img alt="Reference image ${i+1}"><button type="button" aria-label="Remove reference ${i+1}">×</button>`;cell.querySelector('img').src=r.url;cell.querySelector('button').addEventListener('click',()=>{URL.revokeObjectURL(r.url);refs.splice(i,1);renderRefs();saveCachedReferences().catch(err=>setLocalStorageWarning(err.message))});$('refs').append(cell)}$('ref-counter').textContent=refs.length+' / 2 personal photos';const p=PRESETS[selectedPreset];$('repo-ref-note').textContent=(p.ref&&$('project').value==='motorcycle-hill-climb-racing'&&refs.length<2?`Default MHC reference: ${p.ref}. `:'')+'Two personal photos replace the built-in style reference when needed.'}
 $('clear-references').addEventListener('click',()=>{refs.forEach(r=>URL.revokeObjectURL(r.url));refs=[];renderRefs();saveCachedReferences().catch(err=>setLocalStorageWarning(err.message))});
 function headers(){return{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}}
@@ -157,7 +157,7 @@ async function unzip(file){const buf=await file.arrayBuffer(),v=new DataView(buf
 function findZipFile(map,filename){const entries=[...map.entries()].filter(([k])=>k===filename||k.endsWith('/'+filename));return entries.length?entries[0][1]:null}
 function reviewsStoreKey(){return 'forge.review.'+reviewKey}
 function saveReview(){if(!reviewKey)return;writeStore(reviewsStoreKey(),review.map(x=>({id:x.id,decision:x.decision,notes:x.notes})))}
-function renderReview(){const el=$('review-items');el.replaceChildren();$('compare-btn').disabled=review.filter(x=>x.compare).length!==2;$('export-notes').disabled=!review.length;$('export-approved').disabled=!review.some(x=>x.decision==='approved');$('send-approved').disabled=!connected||!review.some(x=>x.decision==='approved'&&x.blob)||lastPublishedRequest===reviewKey;if(!review.length)return;for(let i=0;i<review.length;i++){const x=review[i],card=document.createElement('article');card.className='asset-card '+x.decision;const title=document.createElement('h3');title.textContent=x.name;const img=document.createElement('img');img.src=x.url||'';img.alt='Draft preview: '+x.name;img.loading='lazy';if(!x.url)img.style.display='none';img.onclick=()=>{if(!x.url)return;$('image-big').src=x.url;$('image-title').textContent=x.name;$('image-dialog').showModal()};const badge=document.createElement('span');badge.className='hint';badge.textContent=x.file||'No generated PNG';const actions=document.createElement('div');actions.className='row';for(const [name,value] of [['✓ Approve','approved'],['× Reject','rejected'],['↺ Reset','pending']]){const b=document.createElement('button');b.className='small'+(x.decision===value?' selected':'');b.textContent=name;b.addEventListener('click',()=>{x.decision=value;saveReview();renderReview()});actions.append(b)}const picker=document.createElement('label');picker.className='checks';const check=document.createElement('input');check.type='checkbox';check.checked=!!x.compare;check.addEventListener('change',()=>{x.compare=check.checked;if(review.filter(y=>y.compare).length>2){x.compare=false;toast('Choose only two assets to compare.',true)}renderReview()});picker.append(check,document.createTextNode(' Compare'));const notes=document.createElement('textarea');notes.placeholder='Review notes (optional)…';notes.setAttribute('aria-label','Notes for '+x.name);notes.value=x.notes;notes.addEventListener('input',()=>{x.notes=notes.value;saveReview()});card.append(img,title,badge,actions,picker,notes);el.append(card)}}
+function renderReview(){const el=$('review-items');el.replaceChildren();$('compare-btn').disabled=review.filter(x=>x.compare).length!==2;$('export-notes').disabled=!review.length;$('export-approved').disabled=!review.some(x=>x.decision==='approved');$('send-approved').disabled=!connected||!review.some(x=>x.decision==='approved'&&x.blob)||(lastPublishedRequest===reviewKey||readStore('forge.published.'+reviewKey,false));if(!review.length)return;for(let i=0;i<review.length;i++){const x=review[i],card=document.createElement('article');card.className='asset-card '+x.decision;const title=document.createElement('h3');title.textContent=x.name;const img=document.createElement('img');img.src=x.url||'';img.alt='Draft preview: '+x.name;img.loading='lazy';if(!x.url)img.style.display='none';img.onclick=()=>{if(!x.url)return;$('image-big').src=x.url;$('image-title').textContent=x.name;$('image-dialog').showModal()};const badge=document.createElement('span');badge.className='hint';badge.textContent=x.file||'No generated PNG';const actions=document.createElement('div');actions.className='row';for(const [name,value] of [['✓ Approve','approved'],['× Reject','rejected'],['↺ Reset','pending']]){const b=document.createElement('button');b.className='small'+(x.decision===value?' selected':'');b.textContent=name;b.addEventListener('click',()=>{x.decision=value;saveReview();renderReview()});actions.append(b)}const picker=document.createElement('label');picker.className='checks';const check=document.createElement('input');check.type='checkbox';check.checked=!!x.compare;check.addEventListener('change',()=>{x.compare=check.checked;if(review.filter(y=>y.compare).length>2){x.compare=false;toast('Choose only two assets to compare.',true)}renderReview()});picker.append(check,document.createTextNode(' Compare'));const notes=document.createElement('textarea');notes.placeholder='Review notes (optional)…';notes.setAttribute('aria-label','Notes for '+x.name);notes.value=x.notes;notes.addEventListener('input',()=>{x.notes=notes.value;saveReview()});card.append(img,title,badge,actions,picker,notes);el.append(card)}}
 async function loadReview(file){$('review-status').textContent='Reading ZIP…';try{const data=await unzip(file),reportBytes=findZipFile(data,'report.json');if(!reportBytes)throw Error('ZIP has no asset-workshop-output/report.json.');const report=JSON.parse(dec.decode(reportBytes));loadedReport=report;showReportCost(report);const records=report.assets||[];if(!Array.isArray(records)||!records.length)throw Error('No assets listed in workshop report.');review.forEach(x=>x.url&&URL.revokeObjectURL(x.url));const dir=String(report.request_id||file.name);reviewKey=slug(dir).slice(0,63);lastPublishedRequest=readStore('forge.last-published','');const old=readStore(reviewsStoreKey(),[]);review=records.map((r,i)=>{const f=String(r.file||'');const match=f&&findZipFile(data,f);const blob=match?new Blob([match],{type:'image/png'}):null;const saved=old.find(x=>x.id===String(r.id||i))||{};return{id:String(r.id||i),name:String(r.name||r.id||'Asset '+(i+1)),file:f,status:r.status,url:blob?URL.createObjectURL(blob):'',blob,decision:saved.decision||'pending',notes:saved.notes||'',compare:false}});$('review-status').textContent=`${review.length} assets · ${report.mode||'review'} · request ${dir}`;renderReview();cacheCurrentReview().catch(err=>setLocalStorageWarning('Image cache unavailable: '+err.message));toast('Review opened. Tap a draft to enlarge; approve or reject below.')}catch(e){$('review-status').textContent=e.message;toast('ZIP import failed: '+e.message,true)}}
 $('zip-file').addEventListener('change',e=>{if(e.target.files[0])loadReview(e.target.files[0]);e.target.value=''});const drop=$('dropzone');for(const event of ['dragover','dragenter'])drop.addEventListener(event,e=>{e.preventDefault();drop.classList.add('drag')});for(const event of ['dragleave','drop'])drop.addEventListener(event,e=>{e.preventDefault();drop.classList.remove('drag')});drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadReview(f)});
 const CRC_TABLE=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();function crc32(b){let c=0xffffffff;for(const n of b)c=CRC_TABLE[(c^n)&255]^(c>>>8);return(c^0xffffffff)>>>0}function put16(b,n){b.push(n&255,(n>>>8)&255)}function put32(b,n){put16(b,n&65535);put16(b,(n>>>16)&65535)}
@@ -295,6 +295,20 @@ async function loadCloudReview(id) {
   }
 }
 
+function publishSuccess(key,count,url,existing=false) {
+ lastPublishedRequest=key;
+ writeStore('forge.last-published',key);
+ writeStore('forge.published.'+key,true);
+ const result=$('publish-result');
+ result.replaceChildren();
+ result.append(existing?'✓ Already saved in GitHub. No duplicate upload was made. ':'✓ '+count+' approved PNG(s) saved to GitHub. ');
+ const link=document.createElement('a');
+ link.href=url;link.target='_blank';link.rel='noopener noreferrer';
+ link.textContent=existing?'View approved assets ↗':'View private GitHub commit ↗';
+ result.append(link);
+ renderReview();
+ toast(existing?'These assets were already in GitHub. Nothing was uploaded again.':'Approved artwork saved to GitHub. The playable game was not changed.');
+}
 async function publishApprovedToGithub() {
   const btn = $('send-approved');
   try {
@@ -306,7 +320,7 @@ async function publishApprovedToGithub() {
     const approved = review.filter(x => x.decision === 'approved' && x.blob);
     if (!approved.length) throw Error('Approve at least one generated image');
     if (approved.length > 3) throw Error('Maximum three images per batch');
-    if (lastPublishedRequest === key) throw Error('This review was already sent in this session');
+    if (lastPublishedRequest === key || readStore('forge.published.'+key,false)) throw Error('Already published. No duplicate upload needed.');
     const folder = 'assets/forge-approved/' + key + '/';
     const desc = 'Save ' + approved.length + ' approved PNG(s) to the PRIVATE game repository?\n\n' +
       folder + '\n\nNo existing game art, physics, levels or playable files will be replaced. ' +
@@ -321,8 +335,14 @@ async function publishApprovedToGithub() {
     const parentCommit = await gh('/git/commits/' + parent);
     const baseTree = parentCommit.tree.sha;
     const existing = await gh('/git/trees/' + baseTree + '?recursive=1');
-    if ((existing.tree || []).some(entry => entry.path.startsWith(folder))) {
-      throw Error('This request already exists in approved assets. Nothing was overwritten.');
+    const existingPaths=(existing.tree||[]).filter(entry=>entry.path.startsWith(folder)).map(entry=>entry.path);
+    if(existingPaths.length){
+      const requestedPaths=[...approved.map(item=>folder+secureAssetId(item.id)+'.png'),folder+'review.json'];
+      if(requestedPaths.every(path=>existingPaths.includes(path))){
+        publishSuccess(key,approved.length,'https://github.com/'+REPO+'/tree/main/'+folder.slice(0,-1),true);
+        return; // A previous attempt succeeded, but the old confirmation falsely reported failure.
+      }
+      throw Error('A pack with different contents already exists for this request; nothing was overwritten.');
     }
     const tree = [];
     const filenames = new Set();
@@ -343,7 +363,7 @@ async function publishApprovedToGithub() {
       schema: 1,
       request_id: key,
       published_at: new Date().toISOString(),
-      source: 'The Forge v4 - approved artwork',
+      source: 'The Forge v5.1 - approved artwork',
       approval: review.map(x => ({
         id: x.id, name: x.name, decision: x.decision, notes: x.notes
       })),
@@ -374,29 +394,23 @@ async function publishApprovedToGithub() {
         tree: createdTree.sha, parents: [parent]
       })
     });
-    await gh('/git/refs/heads/main', {
+    // A successful, non-force PATCH is authoritative. A second, immediate GET
+    // may return a stale/cached ref and falsely report a publish failure.
+    const updated=await gh('/git/refs/heads/main', {
       method: 'PATCH',
       body: JSON.stringify({sha: committed.sha, force: false})
     });
-    const verify = await gh('/git/ref/heads/main');
-    if (verify.object.sha !== committed.sha) throw Error('Could not verify published commit');
-    lastPublishedRequest = key;writeStore('forge.last-published',key);
-    const result = $('publish-result');
-    result.replaceChildren();
-    result.append('✓ ' + approved.length + ' approved PNG(s) saved. ');
-    const link = document.createElement('a');
-    link.href = 'https://github.com/' + REPO + '/commit/' + committed.sha;
-    link.target = '_blank'; link.rel = 'noopener noreferrer';
-    link.textContent = 'View private GitHub commit ↗';
-    result.append(link);
-    toast('Approved artwork saved to GitHub. Game files were not changed.');
+    if(updated.object && updated.object.sha && updated.object.sha!==committed.sha){
+      throw Error('GitHub returned a different updated branch head. Inspect repository before retrying.');
+    }
+    publishSuccess(key,approved.length,'https://github.com/'+REPO+'/commit/'+committed.sha);
   } catch (error) {
-    $('publish-result').textContent = 'Not published: ' + error.message;
-    toast('GitHub publish failed: ' + error.message, true);
+    $('publish-result').textContent='Could not confirm this attempt: '+error.message+'. A retry will check for any already-saved images before uploading.';
+    toast('GitHub publishing needs attention: '+error.message,true);
   } finally {
     btn.textContent = '↑ Send approved to GitHub';
     btn.disabled = !connected || !review.some(x => x.decision === 'approved' && x.blob) ||
-      lastPublishedRequest === reviewKey;
+      (lastPublishedRequest===reviewKey||readStore('forge.published.'+reviewKey,false));
   }
 }
 $('send-approved').addEventListener('click', publishApprovedToGithub);

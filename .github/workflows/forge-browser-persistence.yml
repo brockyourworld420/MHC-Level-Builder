@@ -5,6 +5,7 @@ on:
     paths:
       - 'asset-studio/**'
       - 'tests/forge-browser-persistence.mjs'
+      - 'tests/forge-publish.mjs'
       - 'tests/create-forge-fixture.py'
       - '.github/workflows/forge-browser-persistence.yml'
   workflow_dispatch:
@@ -31,3 +32,4 @@ jobs:
           python3 tests/create-forge-fixture.py
           python3 -m http.server 8877 --bind 127.0.0.1 > /tmp/forge-server.log 2>&1 &
           node tests/forge-browser-persistence.mjs
+          node tests/forge-publish.mjs

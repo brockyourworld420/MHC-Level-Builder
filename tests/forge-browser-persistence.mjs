@@ -12,7 +12,7 @@ page.on('pageerror', err => errors.push(err.stack || String(err)));
 
 try {
   await page.goto(pageURL, {waitUntil:'load'});
-  assert.match(await page.locator('.footer-note').textContent(), /v5.0/);
+  assert.match(await page.locator('.footer-note').textContent(), /v5\.1/);
 
   // Drafts should not be reset to Boulder defaults on reload.
   await page.locator('#prompt').fill('Save this hill climb terrain boulder prompt across tabs.');
@@ -36,6 +36,7 @@ try {
     buffer:readFileSync('/tmp/forge-reference.png')
   });
   await page.waitForFunction(() => document.querySelector('#ref-counter')?.textContent?.includes('1 / 2'));
+  await page.waitForFunction(() => document.querySelector('#local-save-status')?.textContent?.includes('Reference photos saved'));
   await page.reload();
   await page.waitForFunction(() => document.querySelector('#ref-counter')?.textContent?.includes('1 / 2'));
 
