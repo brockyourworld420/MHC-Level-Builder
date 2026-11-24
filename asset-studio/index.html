@@ -151,15 +151,11 @@ function formatApiCost(report) {
   const priced = Number(report.priced_images || 0);
   const generated = Number(report.generated_images || 0);
   if (typeof amount === 'number' && Number.isFinite(amount)) {
-    return 'Estimated API cost 
-</script>
-</body></html> + amount.toFixed(4) + ' USD (from token usage)';
+    return 'Estimated API cost $' + amount.toFixed(4) + ' USD (from token usage)';
   }
   const subtotal = report.priced_partial_cost_usd;
   if (typeof subtotal === 'number' && Number.isFinite(subtotal)) {
-    return 'Cost total unavailable; known subtotal 
-</script>
-</body></html> + subtotal.toFixed(4) +
+    return 'Cost total unavailable; known subtotal $' + subtotal.toFixed(4) +
       ' USD (' + priced + '/' + generated + ' priced)';
   }
   return 'API cost unavailable for this run (token usage not reported)';
