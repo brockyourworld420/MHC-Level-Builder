@@ -56,10 +56,17 @@ main{max-width:1520px;margin:0 auto;padding:12px max(12px,env(safe-area-inset-ri
  </div>
 </div></div>
 </section>
-<section id="tab-connect" hidden><div class="layout"><div class="panel"><h2>Private GitHub connection</h2><p class="muted">Connect to your existing private MHC workflow. The token stays only in this browser tab's memory, is never stored in the page or local storage, and is never sent to OpenAI.</p><div class="field"><label for="token">Fine-grained GitHub token</label><input type="password" id="token" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></div><div class="toolbar"><button id="connect" class="primary">Connect to repository</button><button id="disconnect" class="danger">Disconnect</button></div><p class="hint">Create a fine-grained personal access token restricted to <strong>brockyourworld420/Motorcycle-hill-climb-racing</strong>, with <strong>Actions: read/write</strong> and <strong>Contents: read/write</strong> for direct review and approval. Give the token the shortest useful expiration. The Studio cannot access the OpenAI API secret. To send approvals directly to GitHub, grant Contents: read/write in your fine-grained token.</p><a class="button soft" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">GitHub token settings ↗</a></div><div class="panel"><h2>Connection status</h2><p id="connection-status" class="notice" role="status">Offline. Local design, JSON export, and review work without any token.</p><p class="hint">If you prefer not to create a token, use GitHub Actions manually. The workflow offers built-in presets without any JSON editing.</p><div class="row"><a class="button" href="https://github.com/brockyourworld420/Motorcycle-hill-climb-racing/actions/workflows/asset-workshop.yml" target="_blank" rel="noopener noreferrer">Open workshop Actions ↗</a></div><hr class="divider"><h3>Security boundaries</h3><p class="hint">Only your browser contacts api.github.com. Any uploaded reference files go into a new private <span class="mono">asset-requests/…</span> branch for that job. Delete the branch after review; git history and caches may retain images. Never upload sensitive images or paste API keys into a prompt.</p></div></div></section>
+<section id="tab-connect" hidden><div class="layout"><div class="panel"><h2>Private GitHub connection</h2><p class="muted">Connect to your existing private MHC workflow. By default the token stays in the tab only. You can opt in to a locally encrypted remembered connection. No API keys are embedded in the page or sent to OpenAI.</p><div class="field"><label for="token">Fine-grained GitHub token</label><input type="password" id="token" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></div><label class="checks" style="display:flex;align-items:center;gap:10px;margin:10px 0"><input type="checkbox" id="remember-connection"><span>Remember my GitHub connection on this device</span></label>
+<p class="hint">Optional. The token is encrypted with a device-local, non-exportable browser key and can reconnect when you reopen Forge. Browser scripts from this site could still access it. Do not use this on a shared phone. GitHub token expiration still applies.</p>
+<div class="toolbar"><button id="connect" class="primary">Connect to repository</button><button id="disconnect" class="danger">Disconnect and forget token</button></div>
+<div class="toolbar"><button id="forget-connection" class="small ghost">Forget saved connection</button><button id="clear-workspace" class="small ghost">Clear all Forge browser saves</button></div>
+<p id="browser-save-status" class="notice" role="status">Prompts and jobs save locally. Image previews and reference photos use browser storage where available.</p><p class="hint">Create a fine-grained personal access token restricted to <strong>brockyourworld420/Motorcycle-hill-climb-racing</strong>, with <strong>Actions: read/write</strong> and <strong>Contents: read/write</strong> for direct review and approval. Give the token the shortest useful expiration. The Studio cannot access the OpenAI API secret. To send approvals directly to GitHub, grant Contents: read/write in your fine-grained token.</p><a class="button soft" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">GitHub token settings ↗</a></div><div class="panel"><h2>Connection status</h2><p id="connection-status" class="notice" role="status">Offline. Local design, JSON export, and review work without any token.</p><p class="hint">If you prefer not to create a token, use GitHub Actions manually. The workflow offers built-in presets without any JSON editing.</p><div class="row"><a class="button" href="https://github.com/brockyourworld420/Motorcycle-hill-climb-racing/actions/workflows/asset-workshop.yml" target="_blank" rel="noopener noreferrer">Open workshop Actions ↗</a></div><hr class="divider"><h3>Security boundaries</h3><p class="hint">Only your browser contacts api.github.com. Any uploaded reference files go into a new private <span class="mono">asset-requests/…</span> branch for that job. Delete the branch after review; git history and caches may retain images. Never upload sensitive images or paste API keys into a prompt.</p></div></div></section>
 <section id="tab-jobs" hidden><div class="panel"><div class="section-title"><h2>Recent workshop jobs</h2><div class="row"><button id="refresh-runs" class="small">Refresh latest run</button><button id="clear-jobs" class="small ghost">Clear local history</button></div></div><p class="hint">Job references saved on this device; generation takes place on GitHub, not in the phone browser. For new completed runs tap Review here (no ZIP download); older runs still support the ZIP. If uploaded photos were staged, delete the temporary branch after finishing.</p><div id="jobs-list" class="stack"></div></div></section>
-<section id="tab-review" hidden><div class="panel section"><div class="section-title"><h2>Review generated artwork</h2><span class="pill">DIRECT GITHUB REVIEW</span></div><label for="zip-file" id="dropzone" class="dropzone" style="display:block"><strong>Tap to import a workshop-review ZIP</strong><div class="hint">Or drop a GitHub artifact ZIP here. Review images from a GitHub job without downloading, or import an older ZIP here.</div></label><input class="sr-only" type="file" id="zip-file" accept=".zip,application/zip"><div class="row" style="margin-top:10px"><span id="review-status" class="hint grow">No review ZIP opened.</span><button id="export-notes" class="small" disabled>↓ Review notes</button><button id="export-approved" class="small" disabled>↓ Approved ZIP</button><button id="send-approved" class="primary small" disabled>↑ Send approved to GitHub</button><button id="compare-btn" class="small" disabled>Compare 2</button></div><p id="api-cost-report" class="hint" style="margin-top:10px">Open a completed job to see its usage-based API cost estimate.</p><p id="publish-result" class="hint" role="status"></p></div><div id="review-items" class="asset-grid"></div></section>
-<div class="footer-note">THE FORGE · v4.0 · Direct GitHub review and approval · Art drafts only · No automatic game integration. Allowance = planning check, not a hard spend cap.</div>
+<section id="tab-review" hidden><div class="panel section"><div class="section-title"><h2>Review generated artwork</h2><span class="pill">SAVED BROWSER WORKSPACE</span></div><label for="zip-file" id="dropzone" class="dropzone" style="display:block"><strong>Tap to import a workshop-review ZIP</strong><div class="hint">Or drop a GitHub artifact ZIP here. Review images from a GitHub job without downloading, or import an older ZIP here.</div></label><input class="sr-only" type="file" id="zip-file" accept=".zip,application/zip"><div class="row" style="margin-top:10px"><span id="review-status" class="hint grow">No review ZIP opened.</span><button id="export-notes" class="small" disabled>↓ Review notes</button><button id="export-approved" class="small" disabled>↓ Approved ZIP</button><button id="send-approved" class="primary small" disabled>↑ Send approved to GitHub</button><button id="compare-btn" class="small" disabled>Compare 2</button></div><p id="api-cost-report" class="hint" style="margin-top:10px">Open a completed job to see its usage-based API cost estimate.</p><p id="publish-result" class="hint" role="status"></p>
+<p id="local-save-status" class="hint" role="status">Checking saved browser workspace…</p>
+<div class="row" style="margin-top:9px"><button id="restore-last-review" class="small" disabled>↺ Reopen last review</button><span class="hint">Artwork previews, prompts, approvals and job history can be saved on this device.</span></div>
+<div id="saved-reviews-list" class="stack" aria-label="Recently saved reviews"></div></div><div id="review-items" class="asset-grid"></div></section>
+<div class="footer-note">THE FORGE · v5.0 · Browser autosave and direct GitHub review · Art drafts only · No automatic game integration. Allowance = planning check, not a hard spend cap.</div>
 </main>
 <div id="toast" aria-live="polite" role="status"></div>
 <dialog id="image-dialog"><div class="row spread"><strong id="image-title">Asset preview</strong><button class="small" onclick="document.getElementById('image-dialog').close()">Close ×</button></div><img id="image-big" alt="Enlarged artwork"></dialog>
@@ -84,15 +91,32 @@ const PRESETS={
 const STATE_KEY='forge.studio.v3.draft',JOBS_KEY='forge.studio.v3.jobs';let token='',selectedPreset='boulder',refs=[],review=[],reviewKey='',connected=false,runTimer=null;
 function toast(t,isError=false){const e=$('toast');e.textContent=t;e.style.borderColor=isError?'#d5877c':'#c2ad7c';e.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>e.classList.remove('show'),4700)}
 function readStore(k,fallback){try{return JSON.parse(localStorage.getItem(k))??fallback}catch{return fallback}}function writeStore(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
-function tab(name){for(const b of document.querySelectorAll('[data-tab]')){b.classList.toggle('active',b.dataset.tab===name);b.setAttribute('aria-selected',b.dataset.tab===name?'true':'false')}for(const section of ['create','review','jobs','connect'])$('tab-'+section).hidden=section!==name;if(name==='jobs')renderJobs();window.scrollTo(0,0)}
+function tab(name){for(const b of document.querySelectorAll('[data-tab]')){b.classList.toggle('active',b.dataset.tab===name);b.setAttribute('aria-selected',b.dataset.tab===name?'true':'false')}for(const section of ['create','review','jobs','connect'])$('tab-'+section).hidden=section!==name;if(name==='jobs')renderJobs();writeStore('forge.last-tab',name);window.scrollTo(0,0)}
 for(const b of document.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>tab(b.dataset.tab));
 function getDraft(){return{project:$('project').value,assetName:$('asset-name').value,prompt:$('prompt').value,style:$('style').value,model:$('model').value,quality:$('quality').value,complexity:$('complexity').value,variations:$('variations').value,apiSize:$('api-size').value,background:$('background').value,width:$('width').value,height:$('height').value,budget:$('budget').value,preset:selectedPreset}}
-function persist(){writeStore(STATE_KEY,getDraft());recalc()}
+let initializingWorkspace=true,activeProject='';
+function persist(){const draft=getDraft();if(!initializingWorkspace){writeStore(STATE_KEY,draft);writeStore(STATE_KEY+'.'+draft.project,draft);}recalc()}
+function applyDraft(snapshot){
+ if(!snapshot||typeof snapshot!=='object')return;
+ const fields={project:'project',assetName:'asset-name',prompt:'prompt',style:'style',model:'model',quality:'quality',complexity:'complexity',variations:'variations',apiSize:'api-size',background:'background',width:'width',height:'height',budget:'budget'};
+ for(const [key,id] of Object.entries(fields)){if(typeof snapshot[key]==='string'&&$(id))$(id).value=snapshot[key]}
+ if(PRESETS[snapshot.preset])selectedPreset=snapshot.preset;
+ for(const b of $('presets').querySelectorAll('button'))b.classList.toggle('selected',b.dataset.preset===selectedPreset);
+ $('active-template').textContent=selectedPreset.replace('-',' ').toUpperCase();
+}
 function presetChange(key){const p=PRESETS[key];selectedPreset=key;$('asset-name').value=p.name;$('prompt').value=p.prompt;$('api-size').value=p.api;$('width').value=p.size[0];$('height').value=p.size[1];$('background').value=p.background;for(const b of $('presets').querySelectorAll('button'))b.classList.toggle('selected',b.dataset.preset===key);$('active-template').textContent=key.replace('-',' ').toUpperCase();$('repo-ref-note').textContent=p.ref?'Default MHC art reference: '+p.ref:'No automatic repository reference for this template.';persist()}
 function initPresets(){for(const [k,p] of Object.entries(PRESETS)){const b=document.createElement('button');b.type='button';b.dataset.preset=k;b.innerHTML=`<span class="symbol" aria-hidden="true">${p.icon}</span><span>${escapeHtml(p.name)}</span>`;b.addEventListener('click',()=>presetChange(k));$('presets').append(b)}}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function recalc(){const n=Number($('variations').value),reserve=RESERVE[$('quality').value]*n,budget=Number($('budget').value);$('estimated-count').textContent=String(n);$('estimated-cost').textContent='$'+reserve.toFixed(2);$('budget-warning').textContent=budget<reserve?`Paid run needs at least $${reserve.toFixed(2)} planning allowance; current selection: $${budget}.`:`$${budget} allowance covers the $${reserve.toFixed(2)} planning reserve, not actual billing.`;$('budget-warning').className=budget<reserve?'hint warning':'hint';$('launch-mode').textContent=connected?'CONNECTED':'MANUAL';$('launch-help').textContent=connected?'Connected: free validate or confirm paid generation here. API charges are not guaranteed to stop at the allowance.':'Offline: export/copy JSON and paste it into GitHub Actions request_json. For no-copy launches use Connect.'}
-for(const id of ['project','asset-name','prompt','style','model','quality','complexity','variations','api-size','background','width','height','budget'])$(id).addEventListener('input',()=>{if(id==='project'){if($('project').value!=='motorcycle-hill-climb-racing'){if($('style').value===STYLE_MHC)$('style').value=OTHER_STYLE;if(selectedPreset!=='custom')presetChange('custom')}else if($('style').value===OTHER_STYLE)$('style').value=STYLE_MHC;renderRefs()}persist()});
+for(const id of ['project','asset-name','prompt','style','model','quality','complexity','variations','api-size','background','width','height','budget'])$(id).addEventListener('input',()=>{
+ if(id==='project'){
+  const project=$('project').value, saved=readStore(STATE_KEY+'.'+project,null);
+  if(saved){applyDraft(saved);$('project').value=project}
+  else{if(project!=='motorcycle-hill-climb-racing'){if($('style').value===STYLE_MHC)$('style').value=OTHER_STYLE;if(selectedPreset!=='custom')presetChange('custom')}else if($('style').value===OTHER_STYLE)$('style').value=STYLE_MHC}
+  activeProject=project;renderRefs();
+ }
+ persist();
+});
 function slug(s){return String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,48)||'asset'}
 function requestId(){const d=new Date(),s=d.toISOString().replace(/[-:TZ.]/g,'').slice(0,12);return `forge-${s}-${Math.random().toString(36).slice(2,6)}`}
 function makeManifest(id=requestId(),includeUploaded=true){const count=Number($('variations').value),name=$('asset-name').value.trim(),prompt=$('prompt').value.trim(),style=$('style').value.trim(),w=Number($('width').value),h=Number($('height').value);if(name.length<1||name.length>130)throw Error('Asset name must be 1–130 characters.');if(prompt.length<25||prompt.length>15000)throw Error('Prompt must be 25–15,000 characters.');if(style.length<15||style.length>11000)throw Error('Style guide must be 15–11,000 characters.');if(!Number.isInteger(w)||!Number.isInteger(h)||w<32||w>2048||h<32||h>2048)throw Error('Export dimensions must be 32–2,048 whole pixels.');if(count<1||count>3)throw Error('Variations must be 1–3.');let references=[];const preset=PRESETS[selectedPreset];if(preset.ref&&$('project').value==='motorcycle-hill-climb-racing'&&refs.length<2)references.push(preset.ref);if(includeUploaded){references.push(...refs.map((r,i)=>`asset-requests/${id}/reference-${i+1}.jpg`))}if(references.length>2)throw Error('Maximum 2 total references. Remove a photo or choose Custom asset without a built-in reference.');return{schema:2,request_id:id,project:$('project').value,style_text:style,review_only:true,assets:Array.from({length:count},(_,i)=>({id:slug(name).slice(0,48)+'-'+String(i+1).padStart(2,'0'),name:`${name} — variation ${i+1}`,prompt:prompt+(count>1?` Create visually distinct but style-matched variation ${i+1} of ${count}.`:''),references,size:[w,h],api_size:$('api-size').value,background:$('background').value,model:$('model').value,quality:$('quality').value,complexity:$('complexity').value}))}}
@@ -102,19 +126,23 @@ function exportJSON(){try{if(refs.length)throw Error('Uploaded photos need conne
 async function copyJSON(){try{if(refs.length)throw Error('Uploaded photos need connected mode. Remove them before manual JSON export.');const {json}=validateLocal();if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(json);else{const t=document.createElement('textarea');t.value=json;document.body.append(t);t.select();document.execCommand('copy');t.remove()}toast('JSON copied. Paste into GitHub Actions request_json.')}catch(e){toast(e.message,true)}}
 $('save-json').addEventListener('click',exportJSON);$('copy-json').addEventListener('click',copyJSON);
 async function imageToJPEG(file){if(!/^image\/(png|jpeg|webp)$/.test(file.type))throw Error('Only PNG, JPEG and WebP references are supported.');if(file.size>15_000_000)throw Error('Reference photo is larger than 15 MB.');const bmp=await createImageBitmap(file),scale=Math.min(1,1600/Math.max(bmp.width,bmp.height)),w=Math.round(bmp.width*scale),h=Math.round(bmp.height*scale),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h);ctx.drawImage(bmp,0,0,w,h);bmp.close?.();return new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('Could not process photo.')),'image/jpeg',.83))}
-$('reference-files').addEventListener('change',async e=>{try{for(const f of Array.from(e.target.files)){if(refs.length>=2)throw Error('Maximum two uploaded photos.');const blob=await imageToJPEG(f);refs.push({name:f.name,blob,url:URL.createObjectURL(blob)})}renderRefs();persist()}catch(err){toast(err.message,true)}e.target.value=''});
-function renderRefs(){$('refs').replaceChildren();for(let i=0;i<refs.length;i++){const r=refs[i],cell=document.createElement('div');cell.className='ref-thumb';cell.innerHTML=`<img alt="Reference image ${i+1}"><button type="button" aria-label="Remove reference ${i+1}">×</button>`;cell.querySelector('img').src=r.url;cell.querySelector('button').addEventListener('click',()=>{URL.revokeObjectURL(r.url);refs.splice(i,1);renderRefs()});$('refs').append(cell)}$('ref-counter').textContent=refs.length+' / 2 personal photos';const p=PRESETS[selectedPreset];$('repo-ref-note').textContent=(p.ref&&$('project').value==='motorcycle-hill-climb-racing'&&refs.length<2?`Default MHC reference: ${p.ref}. `:'')+'Two personal photos replace the built-in style reference when needed.'}
-$('clear-references').addEventListener('click',()=>{refs.forEach(r=>URL.revokeObjectURL(r.url));refs=[];renderRefs()});
+$('reference-files').addEventListener('change',async e=>{try{for(const f of Array.from(e.target.files)){if(refs.length>=2)throw Error('Maximum two uploaded photos.');const blob=await imageToJPEG(f);refs.push({name:f.name,blob,url:URL.createObjectURL(blob)})}renderRefs();persist();await saveCachedReferences()}catch(err){toast(err.message,true)}e.target.value=''});
+function renderRefs(){$('refs').replaceChildren();for(let i=0;i<refs.length;i++){const r=refs[i],cell=document.createElement('div');cell.className='ref-thumb';cell.innerHTML=`<img alt="Reference image ${i+1}"><button type="button" aria-label="Remove reference ${i+1}">×</button>`;cell.querySelector('img').src=r.url;cell.querySelector('button').addEventListener('click',()=>{URL.revokeObjectURL(r.url);refs.splice(i,1);renderRefs();saveCachedReferences().catch(err=>setLocalStorageWarning(err.message))});$('refs').append(cell)}$('ref-counter').textContent=refs.length+' / 2 personal photos';const p=PRESETS[selectedPreset];$('repo-ref-note').textContent=(p.ref&&$('project').value==='motorcycle-hill-climb-racing'&&refs.length<2?`Default MHC reference: ${p.ref}. `:'')+'Two personal photos replace the built-in style reference when needed.'}
+$('clear-references').addEventListener('click',()=>{refs.forEach(r=>URL.revokeObjectURL(r.url));refs=[];renderRefs();saveCachedReferences().catch(err=>setLocalStorageWarning(err.message))});
 function headers(){return{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}}
 async function gh(path,options={}){if(!token)throw Error('Connect a GitHub token first.');const response=await fetch(`https://api.github.com/repos/${REPO}${path}`,{...options,headers:{...headers(),...(options.body?{'Content-Type':'application/json'}:{})}});if(response.status===204)return{};const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(`GitHub ${response.status}: ${data.message||'Request failed'}`);return data}
-$('connect').addEventListener('click',async()=>{const t=$('token').value.trim();if(!t){toast('Paste a fine-grained token first.',true);return}token=t;$('connect').disabled=true;$('connection-status').textContent='Checking repository access…';try{const r=await gh('');if(r.full_name!==REPO)throw Error('Unexpected repository.');connected=true;$('connection-pill').textContent='GITHUB CONNECTED';$('connection-status').textContent='Connected to '+r.full_name+'. Token is in memory only. Actions: write permission is required to launch jobs.';$('token').value='';recalc();renderReview();toast('GitHub connected. You can launch jobs and publish approvals.')}catch(e){token='';connected=false;$('connection-status').textContent=e.message;toast('Connection failed: '+e.message,true)}finally{$('connect').disabled=false}});
-$('disconnect').addEventListener('click',()=>{token='';connected=false;$('token').value='';$('connection-pill').textContent='OFFLINE';$('connection-status').textContent='Disconnected; token cleared from browser memory.';recalc();renderReview();toast('Disconnected.')});
+$('connect').addEventListener('click',async()=>{const t=$('token').value.trim();if(!t){toast('Paste a fine-grained token first.',true);return}token=t;$('connect').disabled=true;$('connection-status').textContent='Checking repository access…';try{const r=await gh('');if(r.full_name!==REPO)throw Error('Unexpected repository.');connected=true;$('connection-pill').textContent='GITHUB CONNECTED';$('connection-status').textContent='Connected to '+r.full_name+'. Token is in memory only. Actions: write permission is required to launch jobs.';$('token').value='';recalc();renderReview();toast('GitHub connected. You can launch jobs and publish approvals.');
+ if($('remember-connection').checked){
+  try{await saveRememberedToken();toast('Connection will automatically restore on this device.')}
+  catch(err){$('remember-connection').checked=false;setLocalStorageWarning('Connected, but saving the token failed: '+err.message);}
+ }}catch(e){token='';connected=false;$('connection-status').textContent=e.message;toast('Connection failed: '+e.message,true)}finally{$('connect').disabled=false}});
+$('disconnect').addEventListener('click',async()=>{token='';connected=false;$('token').value='';$('connection-pill').textContent='OFFLINE';$('connection-status').textContent='Disconnected; token cleared from browser memory.';recalc();renderReview();try{await forgetRememberedToken()}catch(err){setLocalStorageWarning('Token cleared from tab, but saved token removal failed: '+err.message)}toast('Disconnected and saved connection forgotten.')});
 function jobs(){return readStore(JOBS_KEY,[])}function saveJob(record){const j=jobs();j.unshift(record);writeStore(JOBS_KEY,j.slice(0,24));renderJobs()}
 function dateText(s){try{return new Date(s).toLocaleString()}catch{return s}}
 function renderJobs(){const list=$('jobs-list');list.replaceChildren();const j=jobs();if(!j.length){list.innerHTML='<div class="empty"><strong>No connected launches yet</strong><span>Run the workshop or open GitHub Actions to review existing jobs.</span></div>';return}for(const record of j){const item=document.createElement('div');item.className='job';const url=record.url||WORKFLOW_URL;item.innerHTML=`<div><strong>${escapeHtml(record.name||record.id)}</strong> <span class="pill">${escapeHtml(record.mode)}</span><div class="hint">${escapeHtml(record.id)} · ${escapeHtml(dateText(record.date))}</div><div class="hint">${escapeHtml(record.status||'Sent to GitHub')} ${record.branch&&record.branch!=='main'?'· temporary photo branch':''}</div></div><div class="stack"><a class="button small" target="_blank" rel="noopener noreferrer" href="${escapeHtml(url)}">View run ↗</a>${record.branch&&record.branch!=='main'?`<a class="button small" target="_blank" rel="noopener noreferrer" href="https://github.com/${REPO}/branches">Delete branch ↗</a>`:''}</div>`;list.append(item);if(record.mode==='Paid images'&&record.status==='success'){const reviewButton=document.createElement('button');reviewButton.className='button small';reviewButton.textContent='▧ Review here · cost';reviewButton.addEventListener('click',()=>loadCloudReview(record.id));item.querySelector('.stack').prepend(reviewButton)}}}
 $('clear-jobs').addEventListener('click',()=>{if(confirm('Clear only the job history saved on this device? This will not cancel GitHub jobs.')){writeStore(JOBS_KEY,[]);renderJobs()}});
 function setJob(id,attrs){const j=jobs(),found=j.find(a=>a.id===id);if(found){Object.assign(found,attrs);writeStore(JOBS_KEY,j);renderJobs()}}
-async function pollRun(id,branch='main'){if(!connected)return;try{const url=`/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&branch=${encodeURIComponent(branch)}&per_page=15`,r=await gh(url);const run=(r.workflow_runs||[]).find(x=>(x.display_title||'').includes(id));if(run){setJob(id,{url:run.html_url,status:run.conclusion||run.status});if(run.status==='completed'){if(runTimer){clearInterval(runTimer);runTimer=null}toast(run.conclusion==='success'?'Forge completed. Open Jobs to download the artifact.':'Forge finished: '+run.conclusion,run.conclusion!=='success')}}}catch(e){toast('Could not refresh run: '+e.message,true)}}
+async function pollRun(id,branch='main'){if(!connected)return;try{const url=`/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&branch=${encodeURIComponent(branch)}&per_page=15`,r=await gh(url);const run=(r.workflow_runs||[]).find(x=>(x.display_title||'').includes(id));if(run){setJob(id,{url:run.html_url,status:run.conclusion||run.status});if(run.status==='completed'){if(runTimer){clearInterval(runTimer);runTimer=null}toast(run.conclusion==='success'?'Forge finished. Open Jobs → Review here to see saved artwork and cost.':'Forge finished: '+run.conclusion,run.conclusion!=='success')}}}catch(e){toast('Could not refresh run: '+e.message,true)}}
 $('refresh-runs').addEventListener('click',async()=>{const j=jobs();if(!j.length){toast('No saved connected jobs.');return}await pollRun(j[0].id,j[0].branch)});
 function blobB64(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onerror=()=>reject(Error('Cannot read reference.'));r.onload=()=>resolve(String(r.result).split(',')[1]);r.readAsDataURL(blob)})}
 async function stageReferences(id){if(!refs.length)return'main';const r=await gh('/git/ref/heads/main'),branch='asset-requests/'+id;await gh('/git/refs',{method:'POST',body:JSON.stringify({ref:'refs/heads/'+branch,sha:r.object.sha})});for(let i=0;i<refs.length;i++){const p=`asset-requests/${id}/reference-${i+1}.jpg`,bytes=await blobB64(refs[i].blob);await gh('/contents/'+p,{method:'PUT',body:JSON.stringify({message:'Stage private Forge artwork reference for '+id,content:bytes,branch})})}return branch}
@@ -130,15 +158,20 @@ function findZipFile(map,filename){const entries=[...map.entries()].filter(([k])
 function reviewsStoreKey(){return 'forge.review.'+reviewKey}
 function saveReview(){if(!reviewKey)return;writeStore(reviewsStoreKey(),review.map(x=>({id:x.id,decision:x.decision,notes:x.notes})))}
 function renderReview(){const el=$('review-items');el.replaceChildren();$('compare-btn').disabled=review.filter(x=>x.compare).length!==2;$('export-notes').disabled=!review.length;$('export-approved').disabled=!review.some(x=>x.decision==='approved');$('send-approved').disabled=!connected||!review.some(x=>x.decision==='approved'&&x.blob)||lastPublishedRequest===reviewKey;if(!review.length)return;for(let i=0;i<review.length;i++){const x=review[i],card=document.createElement('article');card.className='asset-card '+x.decision;const title=document.createElement('h3');title.textContent=x.name;const img=document.createElement('img');img.src=x.url||'';img.alt='Draft preview: '+x.name;img.loading='lazy';if(!x.url)img.style.display='none';img.onclick=()=>{if(!x.url)return;$('image-big').src=x.url;$('image-title').textContent=x.name;$('image-dialog').showModal()};const badge=document.createElement('span');badge.className='hint';badge.textContent=x.file||'No generated PNG';const actions=document.createElement('div');actions.className='row';for(const [name,value] of [['✓ Approve','approved'],['× Reject','rejected'],['↺ Reset','pending']]){const b=document.createElement('button');b.className='small'+(x.decision===value?' selected':'');b.textContent=name;b.addEventListener('click',()=>{x.decision=value;saveReview();renderReview()});actions.append(b)}const picker=document.createElement('label');picker.className='checks';const check=document.createElement('input');check.type='checkbox';check.checked=!!x.compare;check.addEventListener('change',()=>{x.compare=check.checked;if(review.filter(y=>y.compare).length>2){x.compare=false;toast('Choose only two assets to compare.',true)}renderReview()});picker.append(check,document.createTextNode(' Compare'));const notes=document.createElement('textarea');notes.placeholder='Review notes (optional)…';notes.setAttribute('aria-label','Notes for '+x.name);notes.value=x.notes;notes.addEventListener('input',()=>{x.notes=notes.value;saveReview()});card.append(img,title,badge,actions,picker,notes);el.append(card)}}
-async function loadReview(file){$('review-status').textContent='Reading ZIP…';try{const data=await unzip(file),reportBytes=findZipFile(data,'report.json');if(!reportBytes)throw Error('ZIP has no asset-workshop-output/report.json.');const report=JSON.parse(dec.decode(reportBytes));loadedReport=report;showReportCost(report);const records=report.assets||[];if(!Array.isArray(records)||!records.length)throw Error('No assets listed in workshop report.');review.forEach(x=>x.url&&URL.revokeObjectURL(x.url));const dir=String(report.request_id||file.name);reviewKey=slug(dir).slice(0,63);const old=readStore(reviewsStoreKey(),[]);review=records.map((r,i)=>{const f=String(r.file||'');const match=f&&findZipFile(data,f);const blob=match?new Blob([match],{type:'image/png'}):null;const saved=old.find(x=>x.id===String(r.id||i))||{};return{id:String(r.id||i),name:String(r.name||r.id||'Asset '+(i+1)),file:f,status:r.status,url:blob?URL.createObjectURL(blob):'',blob,decision:saved.decision||'pending',notes:saved.notes||'',compare:false}});$('review-status').textContent=`${review.length} assets · ${report.mode||'review'} · request ${dir}`;renderReview();toast('Review opened. Tap a draft to enlarge; approve or reject below.')}catch(e){$('review-status').textContent=e.message;toast('ZIP import failed: '+e.message,true)}}
+async function loadReview(file){$('review-status').textContent='Reading ZIP…';try{const data=await unzip(file),reportBytes=findZipFile(data,'report.json');if(!reportBytes)throw Error('ZIP has no asset-workshop-output/report.json.');const report=JSON.parse(dec.decode(reportBytes));loadedReport=report;showReportCost(report);const records=report.assets||[];if(!Array.isArray(records)||!records.length)throw Error('No assets listed in workshop report.');review.forEach(x=>x.url&&URL.revokeObjectURL(x.url));const dir=String(report.request_id||file.name);reviewKey=slug(dir).slice(0,63);lastPublishedRequest=readStore('forge.last-published','');const old=readStore(reviewsStoreKey(),[]);review=records.map((r,i)=>{const f=String(r.file||'');const match=f&&findZipFile(data,f);const blob=match?new Blob([match],{type:'image/png'}):null;const saved=old.find(x=>x.id===String(r.id||i))||{};return{id:String(r.id||i),name:String(r.name||r.id||'Asset '+(i+1)),file:f,status:r.status,url:blob?URL.createObjectURL(blob):'',blob,decision:saved.decision||'pending',notes:saved.notes||'',compare:false}});$('review-status').textContent=`${review.length} assets · ${report.mode||'review'} · request ${dir}`;renderReview();cacheCurrentReview().catch(err=>setLocalStorageWarning('Image cache unavailable: '+err.message));toast('Review opened. Tap a draft to enlarge; approve or reject below.')}catch(e){$('review-status').textContent=e.message;toast('ZIP import failed: '+e.message,true)}}
 $('zip-file').addEventListener('change',e=>{if(e.target.files[0])loadReview(e.target.files[0]);e.target.value=''});const drop=$('dropzone');for(const event of ['dragover','dragenter'])drop.addEventListener(event,e=>{e.preventDefault();drop.classList.add('drag')});for(const event of ['dragleave','drop'])drop.addEventListener(event,e=>{e.preventDefault();drop.classList.remove('drag')});drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadReview(f)});
 const CRC_TABLE=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();function crc32(b){let c=0xffffffff;for(const n of b)c=CRC_TABLE[(c^n)&255]^(c>>>8);return(c^0xffffffff)>>>0}function put16(b,n){b.push(n&255,(n>>>8)&255)}function put32(b,n){put16(b,n&65535);put16(b,(n>>>16)&65535)}
 function makeZip(files){const parts=[],cd=[],head=[],date=new Date();let offset=0;for(const [filename,content] of files){const name=enc.encode(filename.replace(/[^\w./-]/g,'_')),data=content instanceof Uint8Array?content:enc.encode(String(content)),crc=crc32(data),h=[];put32(h,0x04034b50);put16(h,20);put16(h,0x800);put16(h,0);put16(h,0);put16(h,0);put32(h,crc);put32(h,data.length);put32(h,data.length);put16(h,name.length);put16(h,0);parts.push(new Uint8Array(h),name,data);const c=[];put32(c,0x02014b50);put16(c,20);put16(c,20);put16(c,0x800);put16(c,0);put16(c,0);put16(c,0);put32(c,crc);put32(c,data.length);put32(c,data.length);put16(c,name.length);put16(c,0);put16(c,0);put16(c,0);put16(c,0);put32(c,0);put32(c,offset);cd.push(new Uint8Array(c),name);offset+=h.length+name.length+data.length}const cdLen=cd.reduce((n,x)=>n+x.length,0);const end=[];put32(end,0x06054b50);put16(end,0);put16(end,0);put16(end,files.length);put16(end,files.length);put32(end,cdLen);put32(end,offset);put16(end,0);return new Blob([...parts,...cd,new Uint8Array(end)],{type:'application/zip'})}
 function reviewNotes(){return JSON.stringify({schema:1,request_id:reviewKey,exported:new Date().toISOString(),decisions:review.map(x=>({id:x.id,name:x.name,file:x.file,decision:x.decision,notes:x.notes}))},null,2)+'\n'}
 $('export-notes').addEventListener('click',()=>{if(!review.length)return;download(`forge-${reviewKey}-review.json`,new Blob([reviewNotes()],{type:'application/json'}));toast('Review notes exported.')});$('export-approved').addEventListener('click',async()=>{const approved=review.filter(x=>x.decision==='approved'&&x.blob);if(!approved.length){toast('Approve at least one generated PNG first.',true);return}const files=[['review-decisions.json',enc.encode(reviewNotes())]];for(const x of approved)files.push([`approved/${slug(x.id)}.png`,new Uint8Array(await x.blob.arrayBuffer())]);download(`forge-${reviewKey}-approved.zip`,makeZip(files));toast(`${approved.length} approved assets exported. Original game remains unchanged.`)});
 $('compare-btn').addEventListener('click',()=>{const two=review.filter(x=>x.compare);if(two.length!==2)return;const body=$('compare-body');body.replaceChildren();for(const x of two){const div=document.createElement('div'),title=document.createElement('h3'),img=document.createElement('img');title.textContent=x.name;img.src=x.url;img.alt=x.name;div.append(title,img);body.append(div)}$('compare-dialog').showModal()});
-function init(){initPresets();presetChange('boulder');const s=readStore(STATE_KEY,null);if(s){for(const [key,id] of Object.entries({project:'project',assetName:'asset-name',prompt:'prompt',style:'style',model:'model',quality:'quality',complexity:'complexity',variations:'variations',apiSize:'api-size',background:'background',width:'width',height:'height',budget:'budget'})){if(typeof s[key]==='string'&&$(id))$(id).value=s[key]}if(PRESETS[s.preset])selectedPreset=s.preset;for(const b of $('presets').querySelectorAll('button'))b.classList.toggle('selected',b.dataset.preset===selectedPreset);$('active-template').textContent=selectedPreset.toUpperCase()}else{$('style').value=STYLE_MHC;$('prompt').value=PRESETS.boulder.prompt}recalc();renderRefs();renderReview();renderJobs()}
-
+function init(){
+ const saved=readStore(STATE_KEY,null);
+ initPresets();presetChange('boulder');
+ if(saved){applyDraft(saved)}else{$('style').value=STYLE_MHC;$('prompt').value=PRESETS.boulder.prompt}
+ activeProject=$('project').value;initializingWorkspace=false;
+ persist();renderRefs();renderReview();renderJobs();
+}
 // Forge v4: review from private GitHub draft branch, with NO ZIP downloads.
 // Authentication is always through the existing short-lived in-memory GitHub token.
 // Private drafts are never published to GitHub Pages.
@@ -347,7 +380,7 @@ async function publishApprovedToGithub() {
     });
     const verify = await gh('/git/ref/heads/main');
     if (verify.object.sha !== committed.sha) throw Error('Could not verify published commit');
-    lastPublishedRequest = key;
+    lastPublishedRequest = key;writeStore('forge.last-published',key);
     const result = $('publish-result');
     result.replaceChildren();
     result.append('✓ ' + approved.length + ' approved PNG(s) saved. ');
@@ -368,7 +401,199 @@ async function publishApprovedToGithub() {
 }
 $('send-approved').addEventListener('click', publishApprovedToGithub);
 
+
+// Forge v5: On-device workspace. No backend, cookies or third-party storage.
+// Browser/OS storage clearing, incognito mode and storage eviction can erase it.
+const FORGE_DB='forge.device-workspace.v5', FORGE_STORE='records';
+const REVIEW_INDEX_KEY='forge.local-review-index';
+
+function forgeDb(){
+ return new Promise((resolve,reject)=>{
+  if(!('indexedDB' in window)){reject(Error('IndexedDB is unavailable in this browser'));return;}
+  const request=indexedDB.open(FORGE_DB,1);
+  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(FORGE_STORE))db.createObjectStore(FORGE_STORE,{keyPath:'key'});};
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error||Error('Browser storage could not open'));
+  request.onblocked=()=>reject(Error('Close other Forge tabs to upgrade local storage'));
+ });
+}
+async function forgeDbAction(action,key,value){
+ const db=await forgeDb();
+ return new Promise((resolve,reject)=>{
+  let settled=false;
+  const done=(error,result)=>{if(settled)return;settled=true;db.close();error?reject(error):resolve(result);};
+  try{
+   const tx=db.transaction(FORGE_STORE,action==='get'?'readonly':'readwrite');
+   const store=tx.objectStore(FORGE_STORE);
+   const req=action==='get'?store.get(key):action==='put'?store.put({key,value}):action==='delete'?store.delete(key):store.clear();
+   req.onerror=()=>done(req.error||Error('Browser storage request failed'));
+   tx.onerror=()=>done(tx.error||Error('Browser storage transaction failed'));
+   tx.onabort=()=>done(tx.error||Error('Browser storage transaction stopped'));
+   tx.oncomplete=()=>done(null,action==='get'?(req.result?req.result.value:null):true);
+  }catch(e){done(e);}
+ });
+}
+const localGet=key=>forgeDbAction('get',key);
+const localPut=(key,value)=>forgeDbAction('put',key,value);
+const localDel=key=>forgeDbAction('delete',key);
+function setLocalStorageWarning(message){
+ if($('local-save-status'))$('local-save-status').textContent=message;
+ if($('browser-save-status'))$('browser-save-status').textContent=message;
+}
+async function saveCachedReferences(){
+ const serialized=refs.slice(0,2).map(r=>({name:r.name,blob:r.blob}));
+ await localPut('references',serialized);
+}
+async function restoreCachedReferences(){
+ const saved=await localGet('references');
+ if(!Array.isArray(saved)||refs.length)return;
+ refs=saved.slice(0,2).filter(x=>x&&x.blob instanceof Blob&&typeof x.name==='string')
+ .map(x=>({name:x.name,blob:x.blob,url:URL.createObjectURL(x.blob)}));
+ renderRefs();
+}
+function savedReviewIndex(){return readStore(REVIEW_INDEX_KEY,[]).filter(x=>x&&/^[a-z0-9-]{2,63}$/.test(x.id)).slice(0,8);}
+function refreshSavedReviewList(){
+ const list=$('saved-reviews-list');list.replaceChildren();
+ const index=savedReviewIndex();
+ $('restore-last-review').disabled=!index.length;
+ for(const entry of index){
+  const row=document.createElement('div');row.className='row';
+  const title=document.createElement('span');title.className='hint grow';
+  title.textContent=(entry.title||entry.id)+' · '+new Date(entry.updated).toLocaleDateString();
+  const button=document.createElement('button');button.className='small';
+  button.textContent='Reopen';button.addEventListener('click',()=>openSavedReview(entry.id));
+  row.append(title,button);list.append(row);
+ }
+}
+async function cacheCurrentReview(){
+ if(!reviewKey||!review.length||!loadedReport)return;
+ const assets=review.map(x=>({id:x.id,name:x.name,file:x.file,status:x.status,blob:x.blob}));
+ await localPut('review:'+reviewKey,{report:loadedReport,assets,updated:Date.now()});
+ writeStore('forge.last-review',reviewKey);
+ const title=review[0].name+(review.length>1?' + '+(review.length-1)+' more':'');
+ const index=[{id:reviewKey,title,updated:Date.now()},...savedReviewIndex().filter(x=>x.id!==reviewKey)];
+ const keep=index.slice(0,8);
+ writeStore(REVIEW_INDEX_KEY,keep);
+ for(const entry of index.slice(8)){await localDel('review:'+entry.id);}
+ refreshSavedReviewList();
+ $('local-save-status').textContent='✓ Review images and decisions saved on this browser.';
+}
+async function openSavedReview(key,quiet=false){
+ if(!/^[a-z0-9-]{2,63}$/.test(String(key)))throw Error('Invalid review ID');
+ const saved=await localGet('review:'+key);
+ if(!saved||!Array.isArray(saved.assets)||!saved.report){
+  throw Error('Saved artwork was removed by this browser; reopen it from GitHub if available');
+ }
+ review.forEach(x=>x.url&&URL.revokeObjectURL(x.url));
+ reviewKey=key;
+ lastPublishedRequest=readStore('forge.last-published','');
+ loadedReport=saved.report;showReportCost(loadedReport);
+ const decisions=readStore(reviewsStoreKey(),[]);
+ review=saved.assets.map((asset,i)=>{
+  const blob=asset.blob instanceof Blob?asset.blob:null;
+  const state=decisions.find(d=>d.id===asset.id)||{};
+  return {id:asset.id||String(i),name:asset.name||'Asset '+(i+1),
+   file:asset.file||'',status:asset.status||'',url:blob?URL.createObjectURL(blob):'',
+   blob,decision:state.decision||'pending',notes:state.notes||'',compare:false};
+ });
+ $('review-status').textContent=review.length+' saved asset(s) · '+key;
+ renderReview();refreshSavedReviewList();
+ if(!quiet){tab('review');toast('Saved artwork restored from this browser.');}
+}
+$('restore-last-review').addEventListener('click',async()=>{
+ const key=readStore('forge.last-review','');
+ if(!key){toast('No previous review saved.',true);return;}
+ try{await openSavedReview(key);}catch(e){toast(e.message,true);}
+});
+
+// Remembered tokens are ALWAYS opt-in. AES key is non-extractable, but it lives
+// in the same browser storage as the encrypted token: this is not XSS protection.
+// On a shared phone, enable neither the saved token nor the auto-reconnect.
+async function saveRememberedToken(){
+ if(!connected||!token)throw Error('Connect to GitHub before saving a connection');
+ if(!window.crypto||!crypto.subtle)throw Error('Browser encryption is not available');
+ const key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const iv=crypto.getRandomValues(new Uint8Array(12));
+ const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:enc.encode(REPO)},key,enc.encode(token));
+ await localPut('github-credential',{key,iv:iv.slice().buffer,encrypted,repo:REPO});
+ writeStore('forge.remember.disabled',false);
+ $('browser-save-status').textContent='✓ Encrypted connection saved on this device. Disconnect to forget.';
+}
+async function forgetRememberedToken(){
+ writeStore('forge.remember.disabled',true); // Revokes auto-reconnect even if the tab closes mid-delete.
+ await localDel('github-credential');
+ $('remember-connection').checked=false;
+ $('browser-save-status').textContent='Saved GitHub connection forgotten. Other workspace data was kept.';
+}
+async function restoreRememberedToken(){
+ if(readStore('forge.remember.disabled',false)){await forgetRememberedToken();return;}
+ const saved=await localGet('github-credential');
+ if(!saved||saved.repo!==REPO)return;
+ $('remember-connection').checked=true;
+ if(!window.crypto||!crypto.subtle)throw Error('Encryption unavailable: connect again manually');
+ const raw=await crypto.subtle.decrypt({name:'AES-GCM',
+  iv:new Uint8Array(saved.iv),additionalData:enc.encode(REPO)},saved.key,saved.encrypted);
+ token=dec.decode(raw);
+ try{
+  const account=await gh('');
+  if(account.full_name!==REPO)throw Error('Unexpected repository');
+  connected=true;
+  $('connection-pill').textContent='GITHUB CONNECTED';
+  $('connection-status').textContent='✓ Automatically reconnected to '+REPO+' from this browser.';
+  $('browser-save-status').textContent='✓ Encrypted connection restored. Your workspace is available.';
+  $('token').value='';recalc();renderReview();
+  const pending=jobs().filter(j=>j.status==='queued'||j.status==='in_progress').slice(0,3);
+  if(pending.length)Promise.allSettled(pending.map(j=>pollRun(j.id,j.branch||'main')));
+ }catch(error){
+  token='';connected=false;
+  $('connection-status').textContent='Saved connection could not be verified: '+error.message+'. Reconnect when ready.';
+  if(/GitHub 401/.test(error.message)){await forgetRememberedToken();}
+  recalc();renderReview();
+ }
+}
+$('remember-connection').addEventListener('change',async()=>{
+ try{
+  if($('remember-connection').checked){
+   if(connected)await saveRememberedToken();
+   else $('browser-save-status').textContent='The next successful GitHub connection will be remembered.';
+  }else await forgetRememberedToken();
+ }catch(error){
+  $('remember-connection').checked=false;
+  setLocalStorageWarning('Could not remember GitHub connection: '+error.message);
+ }
+});
+$('forget-connection').addEventListener('click',async()=>{
+ try{await forgetRememberedToken();toast('Saved GitHub connection cleared.');}
+ catch(error){toast('Could not forget saved connection: '+error.message,true);}
+});
+$('clear-workspace').addEventListener('click',async()=>{
+ if(!confirm('Erase ALL Forge drafts, cached artwork, reference photos, review notes, job history and remembered GitHub connection from THIS browser? This does not delete GitHub jobs or files.'))return;
+ try{
+  await forgeDbAction('clear');
+  for(const key of Object.keys(localStorage))if(key.startsWith('forge.'))localStorage.removeItem(key);
+  token='';connected=false;
+  location.reload();
+ }catch(error){toast('Could not clear browser workspace: '+error.message,true);}
+});
+async function restoreBrowserWorkspace(){
+ try{
+  await restoreCachedReferences();
+  refreshSavedReviewList();
+  const last=readStore('forge.last-review','');
+  if(last){try{await openSavedReview(last,true)}catch(error){setLocalStorageWarning(error.message);}}
+  const tabName=readStore('forge.last-tab','create');
+  if(['create','review','jobs','connect'].includes(tabName))tab(tabName);
+  await restoreRememberedToken();
+  if(!$('local-save-status').textContent.startsWith('✓')){
+   $('local-save-status').textContent='✓ Drafts, jobs and review choices save on this device. Photos and artwork use local browser storage.';
+  }
+ }catch(error){
+  setLocalStorageWarning('Some browser saves are unavailable: '+error.message+'. Draft text and jobs may still be saved.');
+ }
+}
+
 init();
+restoreBrowserWorkspace();
 })();
 </script>
 </body></html>

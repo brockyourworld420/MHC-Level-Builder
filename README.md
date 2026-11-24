@@ -11,6 +11,12 @@ Both work in an Android landscape browser. The Forge page also works for editing
 
 **No game, motorcycle or rider image, sound effects, physics code, full game assets, or OpenAI API key are included in the published webpages.** Only `index.html`, `asset-studio/index.html`, and `levels/alberta-foothills.json` are uploaded to Pages. The allowlist in `.github/workflows/pages.yml` enforces this at deployment.
 
+## Forge v5 — remember your browser workspace
+
+Forge now automatically saves **draft prompts and settings per game, current project, local job history, review notes, approval choices, last Review tab and downloaded/generated artwork previews**. Up to eight recent review batches plus two compressed personal reference images are stored in browser IndexedDB when permitted. Reopening the same Forge address in the **same browser/profile** restores the last workspace; no ZIP download is needed just to resume reviewing.
+
+Under **Connect**, an optional **Remember my GitHub connection on this device** checkbox saves a token encrypted with a non-extractable browser key and verifies it again on reopening. This is convenient but **not secure against malicious scripts from the same site or someone with access to your unlocked browser**; leave it off on shared devices. Disconnect forgets the locally saved token. The OpenAI API key is still never stored or exposed on the public page. The user can clear all browser saves from Connect. Browser data can be erased by incognito mode, storage cleanup, or OS eviction; GitHub files/jobs are not erased by that action. Avoid ChatGPT in-app previews if that browser doesn't retain site data; open and bookmark Forge in Chrome or Samsung Internet for a stable browser profile.
+
 ## Forge Studio: using API credits
 
 Forge never calls OpenAI directly from the public page. It targets **the private MHC GitHub Actions workflow** `asset-workshop.yml`, where API keys live as encrypted GitHub Actions secrets. Two ways to work:

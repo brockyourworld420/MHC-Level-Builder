@@ -10,6 +10,12 @@ This **public** repository hosts the Level Builder and Forge Studio. The separat
 
 Both HTML pages are standalone and do not require installation or access to the private game for their offline functions.
 
+## Keep your settings when closing the tab
+
+In Forge v5, prompts, per-game settings, local job history, reference images, approved/rejected artwork and review notes are saved on your phone in browser storage, and the last artwork review reopens automatically. Open the **same URL in the same browser**; Chrome and Samsung Internet generally provide a persistent profile, while some in-app previews or private tabs may not.
+
+To avoid pasting the GitHub token each time, choose **Connect → Remember my GitHub connection on this device** before connecting. It is an explicit opt-in: the token is saved encrypted with a local browser key. Anyone with access to your unlocked browser, or scripts running with this site's permissions, could potentially use it. Restrict token scope and expiration, and turn this off on shared devices. **Disconnect and forget token** clears remembered authentication; **Clear all Forge browser saves** clears local workspace data after confirmation. Neither action deletes your GitHub project files.
+
 ## First-use notes
 
 **Level Builder:** Edit terrain with tap/drag, add points, paint independent surface/physics/underground, use JSON import/export and save backups. The scenic view is illustrative, not a playable private game render.
