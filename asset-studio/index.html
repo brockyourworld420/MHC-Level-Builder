@@ -145,9 +145,41 @@ function init(){initPresets();presetChange('boulder');const s=readStore(STATE_KE
 let loadedReport = null;
 let lastPublishedRequest = '';
 
+
+function reconstructLegacyCost(report) {
+  // Previously generated ZIPs already included usage tokens, but no dollar total.
+  // Apply current published STANDARD GPT-Image-2.6 rates to those saved counts.
+  const rows = (report.assets || []).filter(x => x.file && x.reported_usage);
+  if (!rows.length) return null;
+  let total = 0;
+  for (const row of rows) {
+    const model = row.model || report.model;
+    if (model !== 'gpt-image-2.6-flare' && model !== 'gpt-image-2.6-sunburst') return null;
+    const u = row.reported_usage;
+    const d = u && u.input_tokens_details;
+    const od = u && u.output_tokens_details;
+    if (!d || !Number.isInteger(d.text_tokens) || !Number.isInteger(d.image_tokens) ||
+        !Number.isInteger(u.input_tokens) || !Number.isInteger(u.output_tokens) ||
+        d.text_tokens + d.image_tokens !== u.input_tokens) return null;
+    let output = u.output_tokens;
+    if (od && typeof od === 'object') {
+      if (!Number.isInteger(od.image_tokens) || (od.text_tokens || 0) !== 0) return null;
+      output = od.image_tokens;
+    }
+    if (Math.min(d.text_tokens, d.image_tokens, output) < 0) return null;
+    total += (d.text_tokens * 5 + d.image_tokens * 8 + output * 30) / 1000000;
+  }
+  return total;
+}
+
 function formatApiCost(report) {
   if (!report || report.mode !== 'paid') return 'No paid generation';
   const amount = report.estimated_api_cost_usd;
+  const legacy = typeof amount === 'number' ? null : reconstructLegacyCost(report);
+  if (legacy !== null) {
+    return 'Estimated API cost $' + legacy.toFixed(4) +
+      ' USD (reconstructed from older token report at 2026-11-23 rates)';
+  }
   const priced = Number(report.priced_images || 0);
   const generated = Number(report.generated_images || 0);
   if (typeof amount === 'number' && Number.isFinite(amount)) {
