@@ -516,14 +516,17 @@ async function saveRememberedToken(){
  const iv=crypto.getRandomValues(new Uint8Array(12));
  const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:enc.encode(REPO)},key,enc.encode(token));
  await localPut('github-credential',{key,iv:iv.slice().buffer,encrypted,repo:REPO});
+ writeStore('forge.remember.disabled',false);
  $('browser-save-status').textContent='✓ Encrypted connection saved on this device. Disconnect to forget.';
 }
 async function forgetRememberedToken(){
+ writeStore('forge.remember.disabled',true); // Revokes auto-reconnect even if the tab closes mid-delete.
  await localDel('github-credential');
  $('remember-connection').checked=false;
  $('browser-save-status').textContent='Saved GitHub connection forgotten. Other workspace data was kept.';
 }
 async function restoreRememberedToken(){
+ if(readStore('forge.remember.disabled',false)){await forgetRememberedToken();return;}
  const saved=await localGet('github-credential');
  if(!saved||saved.repo!==REPO)return;
  $('remember-connection').checked=true;
