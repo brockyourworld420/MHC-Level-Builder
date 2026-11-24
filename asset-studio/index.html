@@ -168,6 +168,235 @@ function init(){
  activeProject=$('project').value;initializingWorkspace=false;
  persist();renderRefs();renderReview();renderJobs();
 }
+// Forge v4: review from private GitHub draft branch, with NO ZIP downloads.
+// Authentication is always through the existing short-lived in-memory GitHub token.
+// Private drafts are never published to GitHub Pages.
+let loadedReport = null;
+let lastPublishedRequest = '';
+
+
+function reconstructLegacyCost(report) {
+  // Previously generated ZIPs already included usage tokens, but no dollar total.
+  // Apply current published STANDARD GPT-Image-2.6 rates to those saved counts.
+  const rows = (report.assets || []).filter(x => x.file && x.reported_usage);
+  if (!rows.length) return null;
+  let total = 0;
+  for (const row of rows) {
+    const model = row.model || report.model;
+    if (model !== 'gpt-image-2.6-flare' && model !== 'gpt-image-2.6-sunburst') return null;
+    const u = row.reported_usage;
+    const d = u && u.input_tokens_details;
+    const od = u && u.output_tokens_details;
+    if (!d || !Number.isInteger(d.text_tokens) || !Number.isInteger(d.image_tokens) ||
+        !Number.isInteger(u.input_tokens) || !Number.isInteger(u.output_tokens) ||
+        d.text_tokens + d.image_tokens !== u.input_tokens) return null;
+    let output = u.output_tokens;
+    if (od && typeof od === 'object') {
+      if (!Number.isInteger(od.image_tokens) || (od.text_tokens || 0) !== 0) return null;
+      output = od.image_tokens;
+    }
+    if (Math.min(d.text_tokens, d.image_tokens, output) < 0) return null;
+    total += (d.text_tokens * 5 + d.image_tokens * 8 + output * 30) / 1000000;
+  }
+  return total;
+}
+
+function formatApiCost(report) {
+  if (!report || report.mode !== 'paid') return 'No paid generation';
+  const amount = report.estimated_api_cost_usd;
+  const legacy = typeof amount === 'number' ? null : reconstructLegacyCost(report);
+  if (legacy !== null) {
+    return 'Estimated API cost $' + legacy.toFixed(4) +
+      ' USD (reconstructed from older token report at 2026-11-23 rates)';
+  }
+  const priced = Number(report.priced_images || 0);
+  const generated = Number(report.generated_images || 0);
+  if (typeof amount === 'number' && Number.isFinite(amount)) {
+    return 'Estimated API cost $' + amount.toFixed(4) + ' USD (from token usage)';
+  }
+  const subtotal = report.priced_partial_cost_usd;
+  if (typeof subtotal === 'number' && Number.isFinite(subtotal)) {
+    return 'Cost total unavailable; known subtotal $' + subtotal.toFixed(4) +
+      ' USD (' + priced + '/' + generated + ' priced)';
+  }
+  return 'API cost unavailable for this run (token usage not reported)';
+}
+
+function showReportCost(report) {
+  const target = $('api-cost-report');
+  if (!target) return;
+  const text = formatApiCost(report);
+  target.textContent = text + '. The allowance is a planning gate, NOT an invoice or hard cap.';
+}
+
+function secureAssetId(id) {
+  if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(String(id))) {
+    throw Error('Invalid asset or review identifier');
+  }
+  return String(id);
+}
+
+async function githubBlobBytes(sha) {
+  if (!/^[0-9a-f]{40}$/.test(String(sha))) throw Error('Invalid GitHub blob identifier');
+  const object = await gh('/git/blobs/' + sha);
+  if (object.encoding !== 'base64' || typeof object.content !== 'string') {
+    throw Error('GitHub returned an unsupported or too-large asset blob');
+  }
+  const bin = atob(object.content.replace(/\s/g, ''));
+  if (bin.length > 20_000_000) throw Error('Draft image is too large for phone review');
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+async function loadCloudReview(id) {
+  try {
+    if (!connected) {
+      tab('connect');
+      throw Error('Connect your GitHub token first (Contents: read is required)');
+    }
+    id = secureAssetId(id);
+    $('review-status').textContent = 'Loading private GitHub drafts…';
+    const ref = await gh('/git/ref/heads/forge-drafts/' + id);
+    const commit = await gh('/git/commits/' + ref.object.sha);
+    const all = await gh('/git/trees/' + commit.tree.sha + '?recursive=1');
+    const prefix = 'asset-workshop/draft-reviews/' + id + '/';
+    const lookup = name => {
+      const entry = (all.tree || []).find(x => x.path === prefix + name && x.type === 'blob');
+      if (!entry) throw Error('Draft file missing: ' + name);
+      return entry.sha;
+    };
+    const reportBytes = await githubBlobBytes(lookup('report.json'));
+    const report = JSON.parse(dec.decode(reportBytes));
+    if (report.request_id !== id || report.mode !== 'paid' || !Array.isArray(report.assets)) {
+      throw Error('Draft report is not a matching paid Forge request');
+    }
+    if (report.assets.length < 1 || report.assets.length > 3) {
+      throw Error('Draft report has an invalid image count');
+    }
+    const entries = [['asset-workshop-output/report.json', reportBytes]];
+    for (const item of report.assets) {
+      if (typeof item.file !== 'string' || !/^[a-z0-9][a-z0-9-]{1,62}\.png$/.test(item.file)) {
+        throw Error('Draft report references an invalid image filename');
+      }
+      entries.push(['asset-workshop-output/' + item.file,
+        await githubBlobBytes(lookup(item.file))]);
+    }
+    await loadReview(new File([makeZip(entries)], id + '.zip', {type: 'application/zip'}));
+    tab('review');
+    toast('Private drafts loaded. Review and send approved assets straight to GitHub.');
+  } catch (error) {
+    $('review-status').textContent = error.message;
+    toast('Could not open private draft: ' + error.message + '. Older jobs can still import ZIPs.', true);
+  }
+}
+
+async function publishApprovedToGithub() {
+  const btn = $('send-approved');
+  try {
+    if (!connected) {
+      tab('connect');
+      throw Error('Connect GitHub with Contents: read/write permission first');
+    }
+    const key = secureAssetId(reviewKey);
+    const approved = review.filter(x => x.decision === 'approved' && x.blob);
+    if (!approved.length) throw Error('Approve at least one generated image');
+    if (approved.length > 3) throw Error('Maximum three images per batch');
+    if (lastPublishedRequest === key) throw Error('This review was already sent in this session');
+    const folder = 'assets/forge-approved/' + key + '/';
+    const desc = 'Save ' + approved.length + ' approved PNG(s) to the PRIVATE game repository?\n\n' +
+      folder + '\n\nNo existing game art, physics, levels or playable files will be replaced. ' +
+      'These assets will be available for a separate game integration step.';
+    if (!confirm(desc)) return;
+    btn.disabled = true;
+    btn.textContent = 'Preparing GitHub commit…';
+    $('publish-result').textContent = 'Uploading approved images directly to private GitHub…';
+    const head = await gh('/git/ref/heads/main');
+    const parent = head.object && head.object.sha;
+    if (!/^[0-9a-f]{40}$/.test(String(parent))) throw Error('Invalid repository head');
+    const parentCommit = await gh('/git/commits/' + parent);
+    const baseTree = parentCommit.tree.sha;
+    const existing = await gh('/git/trees/' + baseTree + '?recursive=1');
+    if ((existing.tree || []).some(entry => entry.path.startsWith(folder))) {
+      throw Error('This request already exists in approved assets. Nothing was overwritten.');
+    }
+    const tree = [];
+    const filenames = new Set();
+    for (let index = 0; index < approved.length; index++) {
+      const asset = approved[index];
+      const file = secureAssetId(asset.id) + '.png';
+      if (filenames.has(file)) throw Error('Duplicate approved image name');
+      filenames.add(file);
+      if (asset.blob.size > 20_000_000) throw Error('Image exceeds 20 MB limit');
+      btn.textContent = 'Sending image ' + (index + 1) + ' of ' + approved.length + '…';
+      const object = await gh('/git/blobs', {
+        method: 'POST',
+        body: JSON.stringify({content: await blobB64(asset.blob), encoding: 'base64'})
+      });
+      tree.push({path: folder + file, mode: '100644', type: 'blob', sha: object.sha});
+    }
+    const reviewInfo = {
+      schema: 1,
+      request_id: key,
+      published_at: new Date().toISOString(),
+      source: 'The Forge v4 - approved artwork',
+      approval: review.map(x => ({
+        id: x.id, name: x.name, decision: x.decision, notes: x.notes
+      })),
+      cost: loadedReport ? {
+        model: loadedReport.model,
+        planning_reserve_usd: loadedReport.planning_reserve_usd,
+        estimated_api_cost_usd: loadedReport.estimated_api_cost_usd,
+        priced_images: loadedReport.priced_images,
+        generated_images: loadedReport.generated_images,
+        cost_notice: loadedReport.cost_notice
+      } : {note: 'No usage report was available for this imported artwork'},
+      integration: 'Asset library only. No changes to game code or levels.'
+    };
+    const meta = await gh('/git/blobs', {
+      method: 'POST',
+      body: JSON.stringify({content: JSON.stringify(reviewInfo, null, 2) + '\n',
+        encoding: 'utf-8'})
+    });
+    tree.push({path: folder + 'review.json', mode: '100644', type: 'blob', sha: meta.sha});
+    const createdTree = await gh('/git/trees', {
+      method: 'POST',
+      body: JSON.stringify({base_tree: baseTree, tree})
+    });
+    const committed = await gh('/git/commits', {
+      method: 'POST',
+      body: JSON.stringify({
+        message: 'Forge approved art: ' + key + ' (' + approved.length + ' images)',
+        tree: createdTree.sha, parents: [parent]
+      })
+    });
+    await gh('/git/refs/heads/main', {
+      method: 'PATCH',
+      body: JSON.stringify({sha: committed.sha, force: false})
+    });
+    const verify = await gh('/git/ref/heads/main');
+    if (verify.object.sha !== committed.sha) throw Error('Could not verify published commit');
+    lastPublishedRequest = key;
+    const result = $('publish-result');
+    result.replaceChildren();
+    result.append('✓ ' + approved.length + ' approved PNG(s) saved. ');
+    const link = document.createElement('a');
+    link.href = 'https://github.com/' + REPO + '/commit/' + committed.sha;
+    link.target = '_blank'; link.rel = 'noopener noreferrer';
+    link.textContent = 'View private GitHub commit ↗';
+    result.append(link);
+    toast('Approved artwork saved to GitHub. Game files were not changed.');
+  } catch (error) {
+    $('publish-result').textContent = 'Not published: ' + error.message;
+    toast('GitHub publish failed: ' + error.message, true);
+  } finally {
+    btn.textContent = '↑ Send approved to GitHub';
+    btn.disabled = !connected || !review.some(x => x.decision === 'approved' && x.blob) ||
+      lastPublishedRequest === reviewKey;
+  }
+}
+$('send-approved').addEventListener('click', publishApprovedToGithub);
+
 init();
 })();
 </script>
