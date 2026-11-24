@@ -36,6 +36,7 @@ try {
     buffer:readFileSync('/tmp/forge-reference.png')
   });
   await page.waitForFunction(() => document.querySelector('#ref-counter')?.textContent?.includes('1 / 2'));
+  await page.waitForFunction(() => document.querySelector('#local-save-status')?.textContent?.includes('Reference photos saved'));
   await page.reload();
   await page.waitForFunction(() => document.querySelector('#ref-counter')?.textContent?.includes('1 / 2'));
 
